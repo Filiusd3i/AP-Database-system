@@ -1,0 +1,151 @@
+ID,Date,Category,Amount,Description,Vendor_ID,Vendor,Fund,Status,Notes
+1,2025-03-05,Advertising,668.6,Advertising expense 1,,,Special Revenue,Approved,
+2,2024-11-26,Advertising,4085.6,Advertising expense 2,11.0,Initech,Capital Projects,Rejected,
+3,2024-06-06,IT Equipment,2659.61,IT Equipment expense 3,12.0,Stark Industries,Debt Service,Rejected,Notes for expense 3
+4,2024-10-04,Utilities,2626.35,Utilities expense 4,25.0,Acme Corporation,Enterprise Fund,On Hold,
+5,2024-04-08,Rent,1995.26,Rent expense 5,3.0,Oscorp,General Fund,Rejected,
+6,2024-09-15,Advertising,3616.79,Advertising expense 6,8.0,Vendor 8,,On Hold,Notes for expense 6
+7,2024-04-14,Maintenance,235.24,Maintenance expense 7,19.0,Wayne Enterprises,,On Hold,Notes for expense 7
+8,2024-05-01,Rent,2155.81,Rent expense 8,4.0,Vendor 4,Special Revenue,On Hold,
+9,2024-06-24,Utilities,2976.62,Utilities expense 9,17.0,Wonka Industries,Capital Projects,Pending,
+10,2024-04-16,Maintenance,4565.88,Maintenance expense 10,13.0,Umbrella Corp,Debt Service,On Hold,
+11,2024-11-09,Maintenance,2336.33,Maintenance expense 11,2.0,Aperture Science,Capital Projects,Rejected,Notes for expense 11
+12,2024-08-16,Rent,4900.4,Rent expense 12,16.0,Parker Industries,Special Revenue,Approved,
+13,2024-12-15,Professional Services,989.12,Professional Services expense 13,10.0,Vendor 10,Enterprise Fund,Approved,
+14,2024-04-11,Travel,1845.6,Travel expense 14,24.0,Dunder Mifflin,,On Hold,
+15,2024-07-28,Office Supplies,4315.06,Office Supplies expense 15,11.0,Initech,Debt Service,In Review,Notes for expense 15
+16,2024-10-27,IT Equipment,3112.3,IT Equipment expense 16,17.0,Wonka Industries,,In Review,Notes for expense 16
+17,2024-12-12,Insurance,381.88,Insurance expense 17,23.0,Tyrell Corporation,Special Revenue,On Hold,Notes for expense 17
+18,2025-03-12,Travel,2656.72,Travel expense 18,2.0,Aperture Science,Enterprise Fund,Rejected,
+19,2024-08-30,IT Equipment,144.27,IT Equipment expense 19,9.0,Nakatomi Trading Corp.,Debt Service,Approved,Notes for expense 19
+20,2024-11-30,Office Supplies,3203.47,Office Supplies expense 20,25.0,Acme Corporation,Debt Service,On Hold,Notes for expense 20
+21,2024-08-04,Travel,4873.21,Travel expense 21,14.0,Vendor 14,Capital Projects,In Review,
+22,2024-04-05,Utilities,2427.67,Utilities expense 22,27.0,Cyberdyne Systems,Special Revenue,Approved,Notes for expense 22
+23,2025-03-07,Office Supplies,2409.43,Office Supplies expense 23,6.0,Globex,Special Revenue,Approved,
+24,2025-02-17,Utilities,3941.76,Utilities expense 24,23.0,Tyrell Corporation,Debt Service,Approved,Notes for expense 24
+25,2024-09-10,Professional Services,4449.83,Professional Services expense 25,11.0,Initech,Capital Projects,Rejected,Notes for expense 25
+26,2025-01-19,Utilities,3214.16,Utilities expense 26,5.0,Initech,Enterprise Fund,Pending,
+27,2024-07-16,Utilities,4941.97,Utilities expense 27,15.0,Stark Industries,Capital Projects,Approved,
+28,2024-08-03,Travel,663.68,Travel expense 28,23.0,Tyrell Corporation,Debt Service,On Hold,
+29,2024-08-08,Rent,52.97,Rent expense 29,2.0,Aperture Science,Special Revenue,In Review,
+30,2024-05-17,Advertising,3139.99,Advertising expense 30,15.0,Stark Industries,Capital Projects,Approved,
+31,2025-01-08,Maintenance,1789.39,Maintenance expense 31,12.0,Stark Industries,Capital Projects,Approved,
+32,2024-06-24,IT Equipment,1042.37,IT Equipment expense 32,,,Debt Service,Pending,Notes for expense 32
+33,2025-01-05,Maintenance,1461.34,Maintenance expense 33,17.0,Wonka Industries,Capital Projects,Pending,
+34,2025-03-02,Rent,70.51,Rent expense 34,18.0,InGen,General Fund,Rejected,
+35,2025-01-28,Training,1764.69,Training expense 35,2.0,Aperture Science,General Fund,On Hold,
+36,2025-01-06,Utilities,2179.82,Utilities expense 36,11.0,Initech,Special Revenue,In Review,
+37,2024-04-21,Travel,2776.97,Travel expense 37,21.0,Umbrella Corp,Debt Service,In Review,
+38,2024-03-25,Travel,2665.57,Travel expense 38,8.0,Vendor 8,Capital Projects,Approved,
+39,2025-03-21,Training,203.28,Training expense 39,28.0,InGen,Enterprise Fund,Approved,Notes for expense 39
+40,2025-02-07,Rent,4443.43,Rent expense 40,19.0,Wayne Enterprises,,In Review,
+41,2024-08-18,Rent,4428.51,Rent expense 41,18.0,InGen,,Pending,
+42,2024-10-20,Maintenance,3948.84,Maintenance expense 42,24.0,Dunder Mifflin,Special Revenue,In Review,Notes for expense 42
+43,2024-09-07,Training,2629.17,Training expense 43,24.0,Dunder Mifflin,Special Revenue,On Hold,
+44,2024-05-07,Advertising,4214.0,Advertising expense 44,30.0,Stark Industries,Debt Service,Pending,
+45,2024-09-17,Travel,3290.29,Travel expense 45,11.0,Initech,Enterprise Fund,In Review,
+46,2024-05-01,Office Supplies,1377.2,Office Supplies expense 46,3.0,Oscorp,Debt Service,Rejected,
+47,2024-06-20,Maintenance,2893.39,Maintenance expense 47,28.0,InGen,General Fund,In Review,
+48,2025-01-25,Rent,3146.96,Rent expense 48,29.0,Dunder Mifflin,Special Revenue,On Hold,Notes for expense 48
+49,2024-06-01,IT Equipment,1852.4,IT Equipment expense 49,,,Capital Projects,Approved,
+50,2024-10-28,IT Equipment,4476.88,IT Equipment expense 50,7.0,Virtual Dynamics,Special Revenue,Rejected,
+51,2024-10-09,Office Supplies,3211.35,Office Supplies expense 51,21.0,Umbrella Corp,,Approved,
+52,2024-08-22,Insurance,740.89,Insurance expense 52,,,Enterprise Fund,Rejected,
+53,2024-05-17,Utilities,4854.93,Utilities expense 53,27.0,Cyberdyne Systems,Enterprise Fund,Pending,Notes for expense 53
+54,2024-06-18,Maintenance,3128.68,Maintenance expense 54,4.0,Vendor 4,Debt Service,Pending,
+55,2024-08-19,Rent,2986.28,Rent expense 55,12.0,Stark Industries,Capital Projects,Pending,
+56,2024-05-28,Utilities,3749.52,Utilities expense 56,2.0,Aperture Science,Enterprise Fund,On Hold,
+57,2024-10-31,Professional Services,2507.09,Professional Services expense 57,6.0,Globex,General Fund,Pending,
+58,2024-05-20,Rent,373.88,Rent expense 58,1.0,Stark Enterprises,Enterprise Fund,In Review,Notes for expense 58
+59,2024-09-06,Advertising,1767.21,Advertising expense 59,5.0,Initech,General Fund,On Hold,
+60,2025-01-27,IT Equipment,2620.99,IT Equipment expense 60,11.0,Initech,Capital Projects,Rejected,
+61,2025-03-11,Training,3814.75,Training expense 61,7.0,Virtual Dynamics,General Fund,In Review,Notes for expense 61
+62,2024-12-02,Travel,4513.61,Travel expense 62,3.0,Oscorp,Capital Projects,Pending,
+63,2024-04-10,Utilities,2808.82,Utilities expense 63,17.0,Wonka Industries,General Fund,Approved,
+64,2024-05-21,Insurance,4507.28,Insurance expense 64,25.0,Acme Corporation,Debt Service,Pending,
+65,2024-08-10,IT Equipment,4790.18,IT Equipment expense 65,13.0,Umbrella Corp,Capital Projects,Pending,Notes for expense 65
+66,2024-08-18,Rent,869.74,Rent expense 66,,,Capital Projects,Rejected,
+67,2024-08-05,Insurance,152.06,Insurance expense 67,8.0,Vendor 8,Enterprise Fund,On Hold,
+68,2024-06-13,Advertising,3182.38,Advertising expense 68,16.0,Parker Industries,Special Revenue,Pending,
+69,2025-01-02,Insurance,1938.02,Insurance expense 69,7.0,Virtual Dynamics,Capital Projects,Approved,Notes for expense 69
+70,2025-01-15,Advertising,838.7,Advertising expense 70,2.0,Aperture Science,Special Revenue,Approved,Notes for expense 70
+71,2025-01-01,Rent,3825.84,Rent expense 71,,,Special Revenue,Pending,
+72,2024-10-21,Maintenance,345.69,Maintenance expense 72,28.0,InGen,General Fund,Pending,Notes for expense 72
+73,2024-08-09,Maintenance,2548.38,Maintenance expense 73,26.0,Oceanic Airlines,,On Hold,
+74,2024-11-15,Professional Services,2710.76,Professional Services expense 74,20.0,Gekko & Co,Capital Projects,In Review,
+75,2024-11-14,Office Supplies,55.91,Office Supplies expense 75,22.0,Vendor 22,General Fund,On Hold,Notes for expense 75
+76,2024-10-20,Utilities,310.58,Utilities expense 76,11.0,Initech,General Fund,On Hold,
+77,2024-04-05,Advertising,3567.04,Advertising expense 77,13.0,Umbrella Corp,Debt Service,In Review,Notes for expense 77
+78,2024-05-15,Rent,3271.18,Rent expense 78,29.0,Dunder Mifflin,Capital Projects,Approved,
+79,2024-12-13,Utilities,4836.86,Utilities expense 79,22.0,Vendor 22,Enterprise Fund,On Hold,
+80,2024-07-20,Travel,415.52,Travel expense 80,18.0,InGen,Special Revenue,Approved,
+81,2024-09-28,Travel,280.44,Travel expense 81,12.0,Stark Industries,Enterprise Fund,In Review,Notes for expense 81
+82,2024-09-30,Office Supplies,1565.07,Office Supplies expense 82,24.0,Dunder Mifflin,Debt Service,In Review,
+83,2024-06-13,Maintenance,2178.73,Maintenance expense 83,,,,Rejected,
+84,2024-08-16,IT Equipment,334.88,IT Equipment expense 84,14.0,Vendor 14,Debt Service,On Hold,Notes for expense 84
+85,2024-08-03,Travel,68.68,Travel expense 85,2.0,Aperture Science,Debt Service,Pending,Notes for expense 85
+86,2024-11-02,Utilities,2462.91,Utilities expense 86,,,Enterprise Fund,Rejected,Notes for expense 86
+87,2025-01-08,Travel,193.77,Travel expense 87,,,General Fund,Pending,
+88,2024-10-03,Office Supplies,4592.93,Office Supplies expense 88,21.0,Umbrella Corp,,Pending,
+89,2025-01-06,Insurance,3225.27,Insurance expense 89,,,,In Review,
+90,2024-05-28,Utilities,419.72,Utilities expense 90,22.0,Vendor 22,General Fund,Pending,Notes for expense 90
+91,2024-04-10,Office Supplies,4539.71,Office Supplies expense 91,23.0,Tyrell Corporation,Capital Projects,Rejected,
+92,2024-04-10,Office Supplies,985.0,Office Supplies expense 92,13.0,Umbrella Corp,Capital Projects,On Hold,Notes for expense 92
+93,2024-08-04,IT Equipment,1067.04,IT Equipment expense 93,,,Special Revenue,On Hold,
+94,2024-05-13,Utilities,4201.94,Utilities expense 94,,,Enterprise Fund,Approved,
+95,2024-08-06,Travel,4826.24,Travel expense 95,28.0,InGen,Special Revenue,On Hold,
+96,2025-03-08,Professional Services,486.55,Professional Services expense 96,23.0,Tyrell Corporation,Special Revenue,Approved,
+97,2024-08-03,Travel,2493.5,Travel expense 97,25.0,Acme Corporation,Debt Service,Pending,
+98,2024-11-14,Rent,567.71,Rent expense 98,4.0,Vendor 4,Special Revenue,Rejected,
+99,2024-11-15,Rent,959.12,Rent expense 99,12.0,Stark Industries,Enterprise Fund,Rejected,
+100,2024-07-06,IT Equipment,1898.23,IT Equipment expense 100,13.0,Umbrella Corp,,In Review,
+101,2024-05-08,Advertising,4312.82,Advertising expense 101,1.0,Stark Enterprises,Special Revenue,On Hold,
+102,2024-07-24,Insurance,2624.11,Insurance expense 102,20.0,Gekko & Co,Special Revenue,In Review,
+103,2025-02-02,Office Supplies,3845.38,Office Supplies expense 103,25.0,Acme Corporation,Debt Service,Pending,Notes for expense 103
+104,2024-09-18,Utilities,1656.84,Utilities expense 104,,,Debt Service,In Review,Notes for expense 104
+105,2024-07-13,Maintenance,2263.75,Maintenance expense 105,16.0,Parker Industries,Debt Service,In Review,Notes for expense 105
+106,2024-05-21,IT Equipment,372.41,IT Equipment expense 106,19.0,Wayne Enterprises,Capital Projects,Pending,Notes for expense 106
+107,2024-07-02,Office Supplies,2931.08,Office Supplies expense 107,,,Enterprise Fund,Pending,
+108,2024-07-13,Insurance,4847.53,Insurance expense 108,12.0,Stark Industries,General Fund,Rejected,
+109,2024-03-28,Advertising,383.65,Advertising expense 109,22.0,Vendor 22,Debt Service,Approved,
+110,2024-08-30,IT Equipment,382.38,IT Equipment expense 110,7.0,Virtual Dynamics,Capital Projects,On Hold,Notes for expense 110
+111,2024-04-14,Insurance,4373.78,Insurance expense 111,24.0,Dunder Mifflin,Special Revenue,Pending,
+112,2024-04-12,IT Equipment,4530.04,IT Equipment expense 112,,,Capital Projects,In Review,Notes for expense 112
+113,2024-06-10,Utilities,594.65,Utilities expense 113,20.0,Gekko & Co,,Approved,
+114,2025-03-04,IT Equipment,320.07,IT Equipment expense 114,3.0,Oscorp,Capital Projects,Pending,Notes for expense 114
+115,2024-08-13,Utilities,3935.44,Utilities expense 115,,,General Fund,Rejected,Notes for expense 115
+116,2024-11-17,Office Supplies,4246.84,Office Supplies expense 116,11.0,Initech,Debt Service,In Review,
+117,2024-08-21,Insurance,2536.56,Insurance expense 117,29.0,Dunder Mifflin,Special Revenue,Pending,Notes for expense 117
+118,2024-05-01,Insurance,2028.24,Insurance expense 118,23.0,Tyrell Corporation,Special Revenue,Rejected,
+119,2024-03-24,IT Equipment,3800.9,IT Equipment expense 119,2.0,Aperture Science,General Fund,Pending,
+120,2025-02-26,Travel,4583.11,Travel expense 120,30.0,Stark Industries,Enterprise Fund,In Review,
+121,2024-04-20,Advertising,3668.8,Advertising expense 121,15.0,Stark Industries,Capital Projects,In Review,
+122,2024-04-17,Utilities,2344.55,Utilities expense 122,,,,In Review,
+123,2024-04-27,Maintenance,748.55,Maintenance expense 123,30.0,Stark Industries,Enterprise Fund,Rejected,Notes for expense 123
+124,2024-06-02,Professional Services,4549.72,Professional Services expense 124,24.0,Dunder Mifflin,Capital Projects,Rejected,
+125,2024-07-17,Rent,4335.16,Rent expense 125,2.0,Aperture Science,,Rejected,
+126,2025-03-14,IT Equipment,329.79,IT Equipment expense 126,,,Capital Projects,Approved,
+127,2025-01-31,Travel,2590.54,Travel expense 127,,,Debt Service,Pending,
+128,2024-05-15,Rent,2632.34,Rent expense 128,21.0,Umbrella Corp,Capital Projects,Approved,Notes for expense 128
+129,2024-04-26,Office Supplies,815.48,Office Supplies expense 129,,,Special Revenue,In Review,
+130,2024-11-20,Advertising,571.46,Advertising expense 130,7.0,Virtual Dynamics,General Fund,Pending,
+131,2025-03-21,Rent,222.27,Rent expense 131,29.0,Dunder Mifflin,Debt Service,In Review,
+132,2024-12-26,Insurance,1230.53,Insurance expense 132,11.0,Initech,Capital Projects,In Review,
+133,2024-06-09,Utilities,4826.36,Utilities expense 133,9.0,Nakatomi Trading Corp.,Capital Projects,In Review,Notes for expense 133
+134,2025-03-16,Office Supplies,216.58,Office Supplies expense 134,,,,Rejected,Notes for expense 134
+135,2025-01-10,Rent,568.8,Rent expense 135,,,General Fund,Pending,
+136,2024-06-23,IT Equipment,1576.06,IT Equipment expense 136,11.0,Initech,General Fund,Rejected,Notes for expense 136
+137,2024-07-27,Rent,4073.68,Rent expense 137,18.0,InGen,General Fund,Rejected,Notes for expense 137
+138,2024-12-21,Office Supplies,4772.83,Office Supplies expense 138,27.0,Cyberdyne Systems,Debt Service,In Review,Notes for expense 138
+139,2024-05-08,Utilities,4540.1,Utilities expense 139,18.0,InGen,Capital Projects,On Hold,
+140,2025-01-16,Rent,873.83,Rent expense 140,1.0,Stark Enterprises,Special Revenue,Rejected,
+141,2024-09-08,Rent,3704.27,Rent expense 141,28.0,InGen,General Fund,Pending,Notes for expense 141
+142,2025-01-02,Office Supplies,3974.26,Office Supplies expense 142,5.0,Initech,General Fund,On Hold,
+143,2024-09-06,Office Supplies,1785.3,Office Supplies expense 143,21.0,Umbrella Corp,Enterprise Fund,Rejected,Notes for expense 143
+144,2025-01-20,Training,4097.43,Training expense 144,,,,In Review,Notes for expense 144
+145,2025-01-07,IT Equipment,4856.92,IT Equipment expense 145,,,General Fund,Pending,
+146,2024-06-10,Insurance,2588.54,Insurance expense 146,3.0,Oscorp,Enterprise Fund,Pending,
+147,2025-01-16,Utilities,691.16,Utilities expense 147,17.0,Wonka Industries,General Fund,In Review,
+148,2024-12-23,Maintenance,2511.08,Maintenance expense 148,26.0,Oceanic Airlines,Capital Projects,Pending,
+149,2024-09-07,Rent,4751.91,Rent expense 149,3.0,Oscorp,Enterprise Fund,Pending,
+150,2025-01-29,Rent,3674.8,Rent expense 150,27.0,Cyberdyne Systems,General Fund,Pending,Notes for expense 150

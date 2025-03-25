@@ -1,0 +1,101 @@
+ID,Vendor_ID,Vendor,Fund_Paid_By,Invoice_Number,Invoice_Date,Due_Date,total_amount,Status,Payment_Status,Date_of_Payment,Check,Amount,Days_Overdue,Notes
+1,20,Gekko & Co,Capital Projects,INV-99074,2024-10-22,2024-12-18,5091.96,On Hold,Unpaid,,,5091.96,96,
+2,12,Stark Industries,Enterprise Fund,INV-46298,2025-02-05,2025-03-11,8661.57,Pending,Paid,2025-03-14,CHK8588,8661.57,13,
+3,14,Vendor 14,General Fund,INV-20887,2024-10-29,2024-12-19,8735.48,Approved,Complete,2024-11-26,CHK5334,8735.48,95,
+4,30,Stark Industries,Capital Projects,INV-13442,2025-02-26,2025-04-14,8679.21,Rejected,Complete,2025-04-08,CHK7043,8679.21,0,Notes for invoice 4
+5,18,InGen,Capital Projects,INV-17074,2024-11-01,2024-12-29,8233.93,Approved,Unpaid,,,8233.93,85,
+6,25,Acme Corporation,General Fund,INV-75996,2024-09-26,2024-11-02,5272.72,On Hold,Pending,,,5272.72,142,Notes for invoice 6
+7,13,Umbrella Corp,Special Revenue,INV-86948,2024-10-25,2024-12-14,5017.28,Approved,Complete,2024-10-27,CHK7877,5017.28,100,
+8,28,InGen,Debt Service,INV-17005,2025-03-01,2025-04-17,3854.37,In Review,Complete,2025-04-04,CHK1094,3854.37,0,
+9,9,Nakatomi Trading Corp.,Capital Projects,INV-33101,2025-01-22,2025-03-13,1833.77,On Hold,Paid,2025-03-02,CHK5035,1833.77,11,
+10,29,Dunder Mifflin,Special Revenue,INV-37300,2024-11-28,2024-12-17,9477.99,Rejected,Unpaid,,,9477.99,97,
+11,29,Dunder Mifflin,,INV-59129,2024-12-05,2024-12-23,8324.38,Approved,Unpaid,,,8324.38,91,
+12,4,Vendor 4,Special Revenue,INV-63359,2024-10-25,2024-11-23,5754.98,Approved,Pending,,,5754.98,121,Notes for invoice 12
+13,16,Parker Industries,General Fund,INV-89173,2025-01-08,2025-02-16,6616.72,Rejected,Paid,2025-01-17,CHK8728,6616.72,36,Notes for invoice 13
+14,19,Wayne Enterprises,Capital Projects,INV-52725,2024-09-30,2024-11-08,9112.86,Pending,Complete,2024-10-29,CHK1787,9112.86,136,
+15,17,Wonka Industries,Capital Projects,INV-33496,2024-10-11,2024-11-26,8142.63,In Review,Paid,2024-10-20,CHK8246,8142.63,118,
+16,6,Globex,General Fund,INV-43985,2024-09-28,2024-11-19,4684.23,Rejected,Paid,2024-10-07,CHK2605,4684.23,125,Notes for invoice 16
+17,9,Nakatomi Trading Corp.,Debt Service,INV-53937,2025-02-16,2025-03-31,8845.37,On Hold,Complete,2025-02-20,CHK6485,8845.37,0,
+18,14,Vendor 14,Debt Service,INV-15761,2024-10-31,2024-12-22,2275.11,On Hold,Paid,2024-11-16,CHK3695,2275.11,92,Notes for invoice 18
+19,1,Stark Enterprises,General Fund,INV-21006,2025-02-19,2025-03-15,1895.62,Pending,Pending,,,1895.62,9,Notes for invoice 19
+20,23,Tyrell Corporation,Debt Service,INV-66416,2024-12-31,2025-02-11,891.07,In Review,Pending,,,891.07,41,
+21,26,Oceanic Airlines,General Fund,INV-47647,2025-01-14,2025-02-19,9308.71,Rejected,Paid,2025-02-13,CHK7258,9308.71,33,
+22,26,Oceanic Airlines,Enterprise Fund,INV-51732,2024-11-26,2024-12-18,8761.79,In Review,Complete,2024-12-09,CHK6594,8761.79,96,
+23,18,InGen,Enterprise Fund,INV-93747,2024-11-12,2024-12-07,9241.61,Approved,Unpaid,,,9241.61,107,Notes for invoice 23
+24,1,Stark Enterprises,Capital Projects,INV-10433,2025-02-02,2025-03-10,1460.47,Rejected,Complete,2025-03-18,CHK4356,1460.47,14,
+25,25,Acme Corporation,Debt Service,INV-88268,2025-03-19,2025-04-03,5738.62,In Review,Unpaid,,,5738.62,0,
+26,5,Initech,,INV-90225,2024-10-08,2024-11-24,1262.87,In Review,Complete,2024-10-12,CHK9793,1262.87,120,
+27,10,Vendor 10,Enterprise Fund,INV-93195,2024-12-08,2025-01-25,4905.73,In Review,Pending,,,4905.73,58,
+28,29,Dunder Mifflin,Enterprise Fund,INV-46171,2025-02-13,2025-04-11,1280.39,On Hold,Paid,2025-03-15,CHK9717,1280.39,0,Notes for invoice 28
+29,24,Dunder Mifflin,General Fund,INV-74113,2025-03-03,2025-04-18,8198.69,Pending,Unpaid,,,8198.69,0,
+30,5,Initech,Enterprise Fund,INV-13315,2024-12-09,2025-01-31,5579.57,Pending,Pending,,,5579.57,52,Notes for invoice 30
+31,4,Vendor 4,Capital Projects,INV-11149,2025-03-23,2025-05-17,9707.03,On Hold,Paid,2025-05-02,CHK6224,9707.03,0,Notes for invoice 31
+32,27,Cyberdyne Systems,Debt Service,INV-83385,2024-10-28,2024-11-24,4856.35,Approved,Unpaid,,,4856.35,120,Notes for invoice 32
+33,19,Wayne Enterprises,General Fund,INV-47132,2024-11-17,2025-01-10,634.84,In Review,Pending,,,634.84,73,
+34,19,Wayne Enterprises,Capital Projects,INV-54129,2024-12-04,2025-01-31,7325.65,Approved,Unpaid,,,7325.65,52,Notes for invoice 34
+35,11,Initech,Special Revenue,INV-11338,2025-01-01,2025-01-19,3384.37,Pending,Paid,2025-01-27,CHK9293,3384.37,64,
+36,8,Vendor 8,Debt Service,INV-62445,2025-03-08,2025-04-26,2091.36,Pending,Complete,2025-03-24,CHK1550,2091.36,0,
+37,10,Vendor 10,Debt Service,INV-52839,2025-03-03,2025-04-08,5506.56,Approved,Unpaid,,,5506.56,0,
+38,20,Gekko & Co,Special Revenue,INV-70868,2025-03-15,2025-04-25,7106.18,Approved,Complete,2025-04-21,CHK6272,7106.18,0,
+39,6,Globex,Enterprise Fund,INV-80002,2025-01-01,2025-02-13,6901.9,On Hold,Pending,,,6901.9,39,Notes for invoice 39
+40,26,Oceanic Airlines,Debt Service,INV-57366,2025-01-09,2025-02-21,7511.83,Rejected,Pending,,,7511.83,31,
+41,12,Stark Industries,Enterprise Fund,INV-11645,2025-03-15,2025-04-07,2631.72,Approved,Complete,2025-03-22,CHK8682,2631.72,0,
+42,6,Globex,Special Revenue,INV-14946,2024-10-18,2024-12-13,9380.63,Rejected,Unpaid,,,9380.63,101,
+43,18,InGen,Special Revenue,INV-10454,2024-10-18,2024-11-22,8575.14,In Review,Paid,2024-11-27,CHK9988,8575.14,122,
+44,17,Wonka Industries,Debt Service,INV-61309,2024-09-27,2024-11-15,8975.26,In Review,Paid,2024-10-24,CHK6358,8975.26,129,
+45,1,Stark Enterprises,Enterprise Fund,INV-81518,2025-02-24,2025-04-09,1147.78,Approved,Paid,2025-04-08,CHK9117,1147.78,0,Notes for invoice 45
+46,15,Stark Industries,Debt Service,INV-28673,2024-11-15,2024-12-16,5644.42,Approved,Paid,2024-12-04,CHK4035,5644.42,98,
+47,21,Umbrella Corp,Special Revenue,INV-15468,2025-03-10,2025-04-15,9814.28,On Hold,Complete,2025-03-27,CHK2475,9814.28,0,
+48,17,Wonka Industries,Enterprise Fund,INV-35661,2025-02-25,2025-03-28,8817.79,In Review,Complete,2025-03-24,CHK9022,8817.79,0,
+49,3,Oscorp,Debt Service,INV-58442,2024-11-07,2024-12-27,3799.11,Rejected,Paid,2024-12-21,CHK9120,3799.11,87,Notes for invoice 49
+50,20,Gekko & Co,Capital Projects,INV-24459,2025-01-27,2025-02-14,1232.13,Approved,Complete,2025-02-05,CHK3178,1232.13,38,Notes for invoice 50
+51,25,Acme Corporation,Capital Projects,INV-19477,2025-03-24,2025-05-11,4473.98,Rejected,Paid,2025-04-25,CHK8380,4473.98,0,
+52,1,Stark Enterprises,Capital Projects,INV-25621,2025-01-09,2025-03-04,4900.5,Rejected,Paid,2025-01-20,CHK8460,4900.5,20,Notes for invoice 52
+53,16,Parker Industries,Enterprise Fund,INV-56141,2024-11-22,2024-12-19,8480.75,Pending,Unpaid,,,8480.75,95,Notes for invoice 53
+54,19,Wayne Enterprises,Special Revenue,INV-57076,2024-10-11,2024-11-08,403.77,In Review,Paid,2024-10-15,CHK4694,403.77,136,
+55,29,Dunder Mifflin,General Fund,INV-67655,2025-02-13,2025-03-24,929.29,Pending,Paid,2025-03-17,CHK7002,929.29,0,Notes for invoice 55
+56,22,Vendor 22,Special Revenue,INV-38762,2024-11-23,2024-12-12,673.71,Pending,Paid,2024-12-17,CHK5828,673.71,102,
+57,5,Initech,Special Revenue,INV-76913,2024-10-05,2024-11-05,4483.68,Rejected,Complete,2024-10-18,CHK1211,4483.68,139,Notes for invoice 57
+58,14,Vendor 14,Debt Service,INV-40398,2024-11-13,2025-01-05,9716.9,Pending,Pending,,,9716.9,78,Notes for invoice 58
+59,6,Globex,Special Revenue,INV-75085,2024-11-25,2024-12-24,7237.98,On Hold,Complete,2024-12-01,CHK3059,7237.98,90,Notes for invoice 59
+60,13,Umbrella Corp,General Fund,INV-97650,2025-02-09,2025-03-17,7408.54,In Review,Pending,,,7408.54,7,Notes for invoice 60
+61,23,Tyrell Corporation,Enterprise Fund,INV-71759,2024-10-11,2024-12-09,8786.05,In Review,Complete,2024-11-06,CHK3821,8786.05,105,Notes for invoice 61
+62,23,Tyrell Corporation,Debt Service,INV-84154,2025-02-09,2025-03-10,691.52,Pending,Unpaid,,,691.52,14,
+63,20,Gekko & Co,General Fund,INV-74082,2024-12-06,2025-01-10,1350.35,On Hold,Complete,2024-12-07,CHK7753,1350.35,73,
+64,2,Aperture Science,Special Revenue,INV-17734,2025-02-04,2025-03-24,8783.62,In Review,Pending,,,8783.62,0,
+65,3,Oscorp,Debt Service,INV-28147,2024-11-23,2024-12-19,331.08,On Hold,Unpaid,,,331.08,95,Notes for invoice 65
+66,12,Stark Industries,,INV-96436,2025-03-03,2025-04-10,7291.48,Rejected,Paid,2025-03-30,CHK4148,7291.48,0,
+67,16,Parker Industries,Special Revenue,INV-12718,2025-02-14,2025-04-04,9287.05,Rejected,Complete,2025-02-21,CHK6324,9287.05,0,
+68,25,Acme Corporation,Capital Projects,INV-33545,2024-12-29,2025-02-25,5631.71,Approved,Complete,2025-01-27,CHK1504,5631.71,27,
+69,20,Gekko & Co,Special Revenue,INV-58547,2024-12-31,2025-02-24,716.44,In Review,Unpaid,,,716.44,28,
+70,29,Dunder Mifflin,Debt Service,INV-69375,2024-11-06,2024-12-13,4467.5,In Review,Unpaid,,,4467.5,101,
+71,2,Aperture Science,Debt Service,INV-11495,2025-03-18,2025-04-08,7203.45,Rejected,Pending,,,7203.45,0,Notes for invoice 71
+72,11,Initech,Enterprise Fund,INV-10957,2024-12-15,2025-01-12,4775.07,In Review,Unpaid,,,4775.07,71,
+73,9,Nakatomi Trading Corp.,Enterprise Fund,INV-87929,2025-03-21,2025-04-05,3800.76,In Review,Paid,2025-04-26,CHK9313,3800.76,0,
+74,29,Dunder Mifflin,Special Revenue,INV-53086,2025-03-14,2025-04-08,2569.0,Rejected,Pending,,,2569.0,0,
+75,15,Stark Industries,Special Revenue,INV-76997,2024-12-12,2025-01-26,365.32,Rejected,Pending,,,365.32,57,
+76,1,Stark Enterprises,,INV-50345,2025-01-14,2025-02-16,9293.56,In Review,Paid,2025-01-27,CHK8905,9293.56,36,
+77,15,Stark Industries,General Fund,INV-56764,2025-02-13,2025-03-30,9075.08,Approved,Paid,2025-03-07,CHK2565,9075.08,0,
+78,6,Globex,,INV-55384,2024-11-24,2025-01-23,659.22,Pending,Complete,2024-12-28,CHK2991,659.22,60,Notes for invoice 78
+79,17,Wonka Industries,Enterprise Fund,INV-47661,2024-12-13,2025-01-16,6184.69,Rejected,Pending,,,6184.69,67,Notes for invoice 79
+80,10,Vendor 10,Enterprise Fund,INV-96595,2025-02-16,2025-03-15,560.41,Pending,Complete,2025-02-22,CHK4517,560.41,9,
+81,12,Stark Industries,,INV-13775,2024-11-29,2025-01-03,2950.41,Rejected,Complete,2024-12-23,CHK7133,2950.41,80,
+82,20,Gekko & Co,Debt Service,INV-74510,2024-09-28,2024-11-19,5754.26,On Hold,Pending,,,5754.26,125,Notes for invoice 82
+83,17,Wonka Industries,Special Revenue,INV-67051,2024-12-03,2025-01-12,1307.29,On Hold,Pending,,,1307.29,71,Notes for invoice 83
+84,3,Oscorp,,INV-56230,2024-09-29,2024-11-06,6456.2,Pending,Unpaid,,,6456.2,138,Notes for invoice 84
+85,20,Gekko & Co,Capital Projects,INV-61964,2024-11-05,2024-12-06,7458.11,Pending,Unpaid,,,7458.11,108,
+86,7,Virtual Dynamics,Special Revenue,INV-86198,2024-11-05,2024-12-23,8741.9,Approved,Paid,2024-12-07,CHK9636,8741.9,91,
+87,5,Initech,Capital Projects,INV-33102,2025-02-01,2025-03-08,7819.99,Pending,Paid,2025-03-04,CHK9240,7819.99,16,Notes for invoice 87
+88,22,Vendor 22,General Fund,INV-41130,2024-12-07,2025-01-13,7633.8,Approved,Paid,2024-12-17,CHK6205,7633.8,70,Notes for invoice 88
+89,20,Gekko & Co,Enterprise Fund,INV-94694,2025-03-23,2025-04-08,4552.19,Approved,Unpaid,,,4552.19,0,
+90,18,InGen,Enterprise Fund,INV-78653,2024-10-31,2024-12-09,1048.09,Rejected,Paid,2024-11-20,CHK8380,1048.09,105,
+91,30,Stark Industries,,INV-63146,2024-11-28,2025-01-08,2772.91,In Review,Paid,2024-12-06,CHK5008,2772.91,75,Notes for invoice 91
+92,14,Vendor 14,Capital Projects,INV-33736,2025-03-07,2025-04-10,8080.95,Approved,Pending,,,8080.95,0,Notes for invoice 92
+93,6,Globex,Special Revenue,INV-31211,2024-11-17,2025-01-02,3857.86,Approved,Unpaid,,,3857.86,81,Notes for invoice 93
+94,4,Vendor 4,Special Revenue,INV-79542,2025-03-07,2025-04-01,4442.99,Approved,Complete,2025-03-21,CHK6979,4442.99,0,
+95,29,Dunder Mifflin,,INV-60558,2025-03-08,2025-05-06,2521.77,In Review,Paid,2025-03-13,CHK1691,2521.77,0,Notes for invoice 95
+96,2,Aperture Science,Capital Projects,INV-94311,2025-02-06,2025-03-21,738.81,Pending,Pending,,,738.81,3,Notes for invoice 96
+97,16,Parker Industries,Special Revenue,INV-46603,2024-10-29,2024-11-17,9742.22,Approved,Paid,2024-11-14,CHK9351,9742.22,127,
+98,5,Initech,Special Revenue,INV-37823,2024-12-20,2025-01-06,7531.12,Rejected,Complete,2025-01-28,CHK5243,7531.12,77,Notes for invoice 98
+99,15,Stark Industries,,INV-35533,2024-10-24,2024-11-23,1948.8,Pending,Pending,,,1948.8,121,Notes for invoice 99
+100,4,Vendor 4,Capital Projects,INV-26745,2024-12-30,2025-02-05,7725.17,Pending,Paid,2025-01-13,CHK5040,7725.17,47,

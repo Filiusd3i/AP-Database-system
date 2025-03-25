@@ -1,0 +1,31 @@
+ID,Name,Vendor_Type,Contact_Email,Contact_Phone,Address,Payment_Terms,Is_1099,Status,Description
+1,Stark Enterprises,Consultant,contact@starkenterprises.com,684-664-5522,"1804 Main St, City 1, State",Net 15,1,Active,Description for Stark Enterprises
+2,Aperture Science,Supplier,contact@aperturescience.com,755-257-4511,"3681 Main St, City 2, State",Net 15,1,Active,Description for Aperture Science
+3,Oscorp,Supplier,contact@oscorp.com,464-485-6479,"9638 Main St, City 3, State",Due on Receipt,1,Active,Description for Oscorp
+4,Vendor 4,Supplier,contact@vendor4.com,981-369-5360,"7768 Main St, City 4, State",Net 45,0,Inactive,Description for Vendor 4
+5,Initech,Utility,contact@initech.com,159-826-9888,"6047 Main St, City 5, State",Net 45,0,Active,Description for Initech
+6,Globex,Utility,contact@globex.com,223-737-8490,"6235 Main St, City 6, State",Net 15,1,Active,Description for Globex
+7,Virtual Dynamics,Contractor,contact@virtualdynamics.com,731-225-8154,"7720 Main St, City 7, State",Net 30,0,Active,Description for Virtual Dynamics
+8,Vendor 8,Contractor,contact@vendor8.com,873-495-7630,"3551 Main St, City 8, State",Net 60,1,Active,Description for Vendor 8
+9,Nakatomi Trading Corp.,Supplier,contact@nakatomitradingcorp..com,824-137-3345,"6466 Main St, City 9, State",Due on Receipt,1,Active,Description for Nakatomi Trading Corp.
+10,Vendor 10,Utility,contact@vendor10.com,885-865-5220,"3580 Main St, City 0, State",Net 60,0,Inactive,Description for Vendor 10
+11,Initech,Consultant,contact@initech.com,479-352-9158,"2259 Main St, City 1, State",Due on Receipt,1,Active,Description for Initech
+12,Stark Industries,Service Provider,contact@starkindustries.com,638-327-7590,"8666 Main St, City 2, State",Net 30,1,Active,Description for Stark Industries
+13,Umbrella Corp,Utility,contact@umbrellacorp.com,147-763-6935,"9755 Main St, City 3, State",Net 30,0,Active,Description for Umbrella Corp
+14,Vendor 14,Utility,contact@vendor14.com,767-534-8502,"9214 Main St, City 4, State",Due on Receipt,1,Active,Description for Vendor 14
+15,Stark Industries,Utility,contact@starkindustries.com,104-135-7914,"4607 Main St, City 5, State",Net 60,1,Inactive,Description for Stark Industries
+16,Parker Industries,Service Provider,contact@parkerindustries.com,775-587-7530,"6041 Main St, City 6, State",Due on Receipt,1,Active,Description for Parker Industries
+17,Wonka Industries,Contractor,contact@wonkaindustries.com,440-990-7027,"2044 Main St, City 7, State",Net 15,0,Inactive,Description for Wonka Industries
+18,InGen,Contractor,contact@ingen.com,913-958-1076,"8245 Main St, City 8, State",Due on Receipt,0,Active,Description for InGen
+19,Wayne Enterprises,Utility,contact@wayneenterprises.com,713-467-9058,"607 Main St, City 9, State",Net 60,1,Active,Description for Wayne Enterprises
+20,Gekko & Co,Consultant,contact@gekko&co.com,604-509-5372,"7283 Main St, City 0, State",Net 30,0,Active,Description for Gekko & Co
+21,Umbrella Corp,Consultant,contact@umbrellacorp.com,398-746-1420,"7282 Main St, City 1, State",Net 30,0,Active,Description for Umbrella Corp
+22,Vendor 22,Supplier,contact@vendor22.com,301-621-9235,"9846 Main St, City 2, State",Due on Receipt,1,Active,Description for Vendor 22
+23,Tyrell Corporation,Utility,contact@tyrellcorporation.com,868-824-2173,"9969 Main St, City 3, State",Net 15,1,Active,Description for Tyrell Corporation
+24,Dunder Mifflin,Contractor,contact@dundermifflin.com,411-697-6474,"4746 Main St, City 4, State",Due on Receipt,0,Active,Description for Dunder Mifflin
+25,Acme Corporation,Supplier,contact@acmecorporation.com,875-745-2204,"5976 Main St, City 5, State",Net 30,0,Active,Description for Acme Corporation
+26,Oceanic Airlines,Service Provider,contact@oceanicairlines.com,823-575-8849,"3897 Main St, City 6, State",Net 30,0,Active,Description for Oceanic Airlines
+27,Cyberdyne Systems,Service Provider,contact@cyberdynesystems.com,502-922-1095,"7872 Main St, City 7, State",Net 45,0,Active,Description for Cyberdyne Systems
+28,InGen,Consultant,contact@ingen.com,877-492-8519,"4425 Main St, City 8, State",Net 60,0,Active,Description for InGen
+29,Dunder Mifflin,Service Provider,contact@dundermifflin.com,758-888-7340,"9051 Main St, City 9, State",Due on Receipt,1,Inactive,Description for Dunder Mifflin
+30,Stark Industries,Supplier,contact@starkindustries.com,156-282-7789,"6872 Main St, City 0, State",Net 60,1,Active,Description for Stark Industries

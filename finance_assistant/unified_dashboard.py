@@ -116,10 +116,14 @@ class UnifiedDashboard:
                                fill=text_color, font=('Segoe UI', 16, 'bold'),
                                anchor='w')
         
-        # Add refresh button
+        # Add refresh and aging report buttons
         refresh_button = ttk.Button(header_frame, text="⟳ Refresh", 
                                   command=self.update_dashboard_data)
-        refresh_button.place(x=700, y=15)
+        refresh_button.place(x=620, y=15)
+        
+        aging_button = ttk.Button(header_frame, text="Generate Aging Report", 
+                                command=self.generate_aging_report)
+        aging_button.place(x=720, y=15)
     
     def create_search_section(self, parent_frame):
         """Create natural language search section"""
@@ -161,7 +165,7 @@ class UnifiedDashboard:
              "value_attr": "total_amount", "format": "${:,.2f}"},
             {"from": "#00796B", "to": "#004D40", "title": "Paid This Year", 
              "value_attr": "total_paid_current_year", "format": "${:,.2f}"},
-            {"from": "#6A1B9A", "to": "#4A148C", "title": "Unpaid Invoices", 
+            {"from": "#6A1B9A", "to": "#4A148C", "title": "Current Invoices", 
              "value_attr": "total_unpaid", "format": "${:,.2f}"},
             {"from": "#C62828", "to": "#B71C1C", "title": "Overdue Invoices", 
              "value_attr": "total_overdue", "format": "${:,.2f}"}
@@ -282,9 +286,9 @@ class UnifiedDashboard:
         table_frame = ttk.LabelFrame(parent_frame, text="Invoices")
         table_frame.pack(fill=tk.BOTH, expand=True, pady=10)
         
-        # Define columns
-        columns = ("invoice_number", "vendor", "amount", "invoice_date", 
-                  "due_date", "payment_status", "fund_paid_by")
+        # Define columns - reordered to put fund_paid_by first, vendor_name before invoice_number, and added dateofpayment and approver
+        columns = ("fund_paid_by", "vendor_name", "invoice_number", "amount", "invoice_date", 
+                  "due_date", "payment_status", "dateofpayment", "approver")
         
         # Create treeview
         self.invoice_tree = ttk.Treeview(table_frame, columns=columns, show="headings")
@@ -304,7 +308,7 @@ class UnifiedDashboard:
             self.invoice_tree.heading(col, text=display_name, 
                                     command=lambda c=col: self.sort_treeview(c))
             
-            width = 150 if col in ('vendor', 'fund_paid_by') else 100
+            width = 150 if col in ('vendor_name', 'fund_paid_by') else 100
             self.invoice_tree.column(col, width=width, minwidth=80)
         
         # Bind double-click for details
@@ -386,6 +390,233 @@ class UnifiedDashboard:
         sql_button = ttk.Button(status_frame, text="SQL Query Library", 
                               command=self.show_sql_library)
         sql_button.pack(side=tk.RIGHT, padx=5)
+    
+    def generate_aging_report(self):
+        """Generate an accounts payable aging report"""
+        try:
+            # Create a top-level window for the aging report
+            report_window = tk.Toplevel(self.parent)
+            report_window.title("Accounts Payable Aging Report")
+            report_window.geometry("900x600")
+            report_window.configure(bg="#1e1e2e")
+            
+            # Create a main frame
+            main_frame = ttk.Frame(report_window)
+            main_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
+            
+            # Title and date
+            header_frame = ttk.Frame(main_frame)
+            header_frame.pack(fill=tk.X, pady=(0, 20))
+            
+            title_label = ttk.Label(header_frame, text="Accounts Payable Aging Report", 
+                                  font=('Segoe UI', 16, 'bold'))
+            title_label.pack(side=tk.LEFT)
+            
+            # Today's date
+            today = datetime.now().strftime("%m/%d/%Y")
+            date_label = ttk.Label(header_frame, text=f"Report Date: {today}", 
+                                 font=('Segoe UI', 12))
+            date_label.pack(side=tk.RIGHT)
+            
+            # Query to get aging data
+            query = """
+            SELECT 
+                vendor_name,
+                invoice_number,
+                invoice_date,
+                due_date,
+                amount,
+                CASE
+                    WHEN due_date::DATE >= CURRENT_DATE THEN 'Current'
+                    WHEN due_date::DATE >= CURRENT_DATE - INTERVAL '30 days' THEN '1-30 Days'
+                    WHEN due_date::DATE >= CURRENT_DATE - INTERVAL '60 days' THEN '31-60 Days'
+                    WHEN due_date::DATE >= CURRENT_DATE - INTERVAL '90 days' THEN '61-90 Days'
+                    ELSE 'Over 90 Days'
+                END AS aging_bucket
+            FROM invoices
+            WHERE payment_status = 'Unpaid'
+            ORDER BY due_date ASC
+            """
+            
+            result = self.db_manager.db.execute_query(query)
+            
+            if result.get('error'):
+                messagebox.showerror("Query Error", f"Error retrieving aging data: {result['error']}")
+                return
+            
+            # Initialize buckets for summary
+            buckets = {
+                'Current': 0,
+                '1-30 Days': 0,
+                '31-60 Days': 0,
+                '61-90 Days': 0,
+                'Over 90 Days': 0
+            }
+            
+            # Process data
+            report_data = []
+            for row in result.get('rows', []):
+                vendor = row[0]
+                invoice_num = row[1]
+                invoice_date = row[2].strftime('%m/%d/%Y') if row[2] else 'N/A'
+                due_date = row[3].strftime('%m/%d/%Y') if row[3] else 'N/A'
+                amount = float(row[4]) if row[4] is not None else 0
+                bucket = row[5]
+                
+                # Add to summary
+                buckets[bucket] += amount
+                
+                # Add to detail data
+                report_data.append({
+                    'vendor': vendor,
+                    'invoice_num': invoice_num,
+                    'invoice_date': invoice_date,
+                    'due_date': due_date,
+                    'amount': amount,
+                    'bucket': bucket
+                })
+            
+            # Summary section
+            summary_frame = ttk.LabelFrame(main_frame, text="Summary")
+            summary_frame.pack(fill=tk.X, pady=(0, 20))
+            
+            # Create a grid for summary
+            summary_grid = ttk.Frame(summary_frame)
+            summary_grid.pack(padx=10, pady=10)
+            
+            # Header row for summary
+            headers = ["Current", "1-30 Days", "31-60 Days", "61-90 Days", "Over 90 Days", "Total"]
+            for col, header in enumerate(headers):
+                header_label = ttk.Label(summary_grid, text=header, font=('Segoe UI', 11, 'bold'))
+                header_label.grid(row=0, column=col, padx=10, pady=5)
+            
+            # Calculate total
+            total = sum(buckets.values())
+            
+            # Values row for summary
+            values = [buckets['Current'], buckets['1-30 Days'], buckets['31-60 Days'], 
+                     buckets['61-90 Days'], buckets['Over 90 Days'], total]
+            
+            for col, value in enumerate(values):
+                value_label = ttk.Label(summary_grid, text=f"${value:,.2f}", font=('Segoe UI', 11))
+                value_label.grid(row=1, column=col, padx=10, pady=5)
+            
+            # Detail section
+            detail_frame = ttk.LabelFrame(main_frame, text="Invoice Details")
+            detail_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
+            
+            # Create treeview for details
+            columns = ("vendor", "invoice_num", "invoice_date", "due_date", "amount", "bucket")
+            detail_tree = ttk.Treeview(detail_frame, columns=columns, show="headings")
+            
+            # Configure columns
+            column_widths = {
+                "vendor": 200,
+                "invoice_num": 120,
+                "invoice_date": 100,
+                "due_date": 100,
+                "amount": 100,
+                "bucket": 100
+            }
+            
+            column_texts = {
+                "vendor": "Vendor",
+                "invoice_num": "Invoice #",
+                "invoice_date": "Invoice Date",
+                "due_date": "Due Date",
+                "amount": "Amount",
+                "bucket": "Aging"
+            }
+            
+            for col in columns:
+                detail_tree.heading(col, text=column_texts[col])
+                detail_tree.column(col, width=column_widths[col])
+            
+            # Add scrollbars
+            vsb = ttk.Scrollbar(detail_frame, orient="vertical", command=detail_tree.yview)
+            detail_tree.configure(yscrollcommand=vsb.set)
+            
+            hsb = ttk.Scrollbar(detail_frame, orient="horizontal", command=detail_tree.xview)
+            detail_tree.configure(xscrollcommand=hsb.set)
+            
+            # Pack treeview and scrollbars
+            detail_tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+            vsb.pack(side=tk.RIGHT, fill=tk.Y)
+            hsb.pack(side=tk.BOTTOM, fill=tk.X)
+            
+            # Populate treeview
+            for item in report_data:
+                values = (
+                    item['vendor'],
+                    item['invoice_num'],
+                    item['invoice_date'],
+                    item['due_date'],
+                    f"${item['amount']:,.2f}",
+                    item['bucket']
+                )
+                detail_tree.insert("", tk.END, values=values)
+            
+            # Button frame
+            button_frame = ttk.Frame(main_frame)
+            button_frame.pack(fill=tk.X, pady=10)
+            
+            # Export button
+            export_button = ttk.Button(button_frame, text="Export to CSV", 
+                                    command=lambda: self.export_aging_report(report_data))
+            export_button.pack(side=tk.LEFT)
+            
+            # Close button
+            close_button = ttk.Button(button_frame, text="Close", 
+                                   command=report_window.destroy)
+            close_button.pack(side=tk.RIGHT)
+            
+            # Status
+            status_label = ttk.Label(main_frame, text=f"Found {len(report_data)} unpaid invoices",
+                                   font=('Segoe UI', 10))
+            status_label.pack(side=tk.BOTTOM, anchor=tk.W)
+            
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to generate aging report: {str(e)}")
+            logger.error(f"Aging report error: {str(e)}")
+    
+    def export_aging_report(self, report_data):
+        """Export the aging report to a CSV file"""
+        try:
+            import csv
+            from tkinter import filedialog
+            
+            # Ask for file location
+            filename = filedialog.asksaveasfilename(
+                initialdir="/",
+                title="Save Aging Report",
+                filetypes=(("CSV files", "*.csv"), ("All files", "*.*")),
+                defaultextension=".csv"
+            )
+            
+            if not filename:  # User cancelled
+                return
+                
+            # Write to CSV
+            with open(filename, 'w', newline='') as csvfile:
+                fieldnames = ['Vendor', 'Invoice #', 'Invoice Date', 'Due Date', 'Amount', 'Aging']
+                writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+                
+                writer.writeheader()
+                for item in report_data:
+                    writer.writerow({
+                        'Vendor': item['vendor'],
+                        'Invoice #': item['invoice_num'],
+                        'Invoice Date': item['invoice_date'],
+                        'Due Date': item['due_date'],
+                        'Amount': f"${item['amount']:,.2f}",
+                        'Aging': item['bucket']
+                    })
+            
+            messagebox.showinfo("Export Successful", f"Report exported to {filename}")
+            
+        except Exception as e:
+            messagebox.showerror("Export Error", f"Failed to export report: {str(e)}")
+            logger.error(f"Report export error: {str(e)}")
 
     def update_dashboard_data(self):
         """Update all dashboard data safely"""
@@ -395,13 +626,13 @@ class UnifiedDashboard:
             # Calculate summary values
             current_year = datetime.now().year
             
-            # Total amount
+            # Total amount - get sum of all invoices
             query = "SELECT COALESCE(SUM(amount), 0) FROM invoices"
             result = self.db_manager.db.execute_query(query)
             if not result.get('error') and result['rows']:
                 self.total_amount = result['rows'][0][0] or 0
             
-            # Current year paid
+            # Current year paid - properly filter by payment_status and year
             query = f"""
             SELECT COALESCE(SUM(amount), 0) FROM invoices 
             WHERE payment_status = 'Paid' 
@@ -431,10 +662,11 @@ class UnifiedDashboard:
             if not result.get('error') and result['rows']:
                 self.total_paid_prev_year = result['rows'][0][0] or 0
             
-            # Total unpaid
+            # Total current (unpaid but not overdue)
             query = """
             SELECT COALESCE(SUM(amount), 0) FROM invoices 
             WHERE payment_status = 'Unpaid'
+            AND (due_date::DATE >= CURRENT_DATE OR due_date IS NULL)
             """
             result = self.db_manager.db.execute_query(query)
             if not result.get('error') and result['rows']:
@@ -641,43 +873,88 @@ class UnifiedDashboard:
                 conditions.append("fund_paid_by = %s")
                 params.append(fund)
             
-            # Build the query
-            query = "SELECT * FROM invoices"
+            # Build the query with specific columns in the right order - matching the treeview display order
+            query = """
+            SELECT 
+                fund_paid_by,
+                vendor_name,
+                invoice_number, 
+                amount, 
+                invoice_date, 
+                due_date, 
+                payment_status,
+                dateofpayment,
+                approver,
+                invoice_id
+            FROM invoices
+            """
             if conditions:
                 query += " WHERE " + " AND ".join(conditions)
             query += " ORDER BY invoice_date DESC"
             
             # Execute the query
+            logger.info(f"Executing filter query: {query} with params: {params}")
             result = self.db_manager.db.execute_query(query, params)
             
             if result.get('error'):
-                self.status_var.set(f"Error: {result['error']}")
+                error_msg = f"Error: {result['error']}"
+                logger.error(error_msg)
+                self.status_var.set(error_msg)
                 return
             
-            # Populate treeview
-            for row in result['rows']:
-                # Format values for display
-                formatted_values = []
-                for i, value in enumerate(row):
-                    if isinstance(value, (datetime, date)):
-                        formatted_values.append(value.strftime('%Y-%m-%d'))
-                    elif isinstance(value, (int, float)) and i == 2:  # Amount column
-                        try:
-                            num_value = float(value)
-                            formatted_values.append(f"${num_value:,.2f}")
-                        except (ValueError, TypeError):
-                            formatted_values.append("$0.00")
-                    else:
-                        formatted_values.append(str(value) if value is not None else "")
-                
-                # Insert into tree
-                self.invoice_tree.insert("", "end", values=formatted_values)
+            # Log the result for debugging
+            row_count = len(result.get('rows', []))
+            logger.info(f"Query returned {row_count} rows")
             
-            self.status_var.set(f"Displaying {len(result['rows'])} invoices")
+            if row_count == 0:
+                # Run a simple query to check if there's data at all
+                check_query = "SELECT COUNT(*) FROM invoices"
+                check_result = self.db_manager.db.execute_query(check_query)
+                if not check_result.get('error') and check_result['rows']:
+                    total_count = check_result['rows'][0][0]
+                    logger.info(f"Total invoices in database: {total_count}")
+                    if total_count > 0:
+                        logger.warning("Database has records but filter returned none")
+            
+            # Populate treeview
+            for row in result.get('rows', []):
+                # Format values for display - excluding invoice_id which is the last column
+                try:
+                    if len(row) == 0:
+                        logger.warning("Empty row returned from query")
+                        continue
+                        
+                    invoice_id = row[-1] if len(row) > 9 else None  # Save invoice_id for potential future use
+                    display_values = row[:-1] if len(row) > 9 else row  # Get all columns except the last one (invoice_id)
+                    
+                    # Log the row for debugging
+                    logger.debug(f"Processing row: {row}")
+                    
+                    # Format all values according to their type
+                    formatted_values = []
+                    for i, value in enumerate(display_values):
+                        if isinstance(value, (datetime, date)):
+                            formatted_values.append(value.strftime('%m/%d/%Y'))
+                        elif isinstance(value, (int, float)) and i == 3:  # Amount column (index 3 with new order)
+                            try:
+                                num_value = float(value)
+                                formatted_values.append(f"${num_value:,.2f}")
+                            except (ValueError, TypeError):
+                                formatted_values.append("$0.00")
+                        else:
+                            formatted_values.append(str(value) if value is not None else "")
+                    
+                    # Insert into tree
+                    self.invoice_tree.insert("", "end", values=formatted_values)
+                except Exception as row_error:
+                    logger.error(f"Error processing row {row}: {str(row_error)}")
+            
+            self.status_var.set(f"Displaying {row_count} invoices")
             
         except Exception as e:
-            logger.error(f"Error applying filters: {str(e)}")
-            self.status_var.set(f"Error applying filters: {str(e)}")
+            error_msg = f"Error applying filters: {str(e)}"
+            logger.error(error_msg)
+            self.status_var.set(error_msg)
     
     def clear_filters(self):
         """Reset all filters to default values"""
@@ -714,22 +991,47 @@ class UnifiedDashboard:
         """Perform keyword-based search when LLM is not available"""
         query_lower = query_text.lower()
         
+        # Use consistent column selection for all queries
+        columns = """
+                fund_paid_by,
+                invoice_number, 
+                vendor_name, 
+                amount, 
+                invoice_date, 
+                due_date, 
+                payment_status,
+                dateofpayment,
+                approver,
+                invoice_id
+        """
+        
         if "unpaid" in query_lower:
-            sql = "SELECT * FROM invoices WHERE payment_status = 'Unpaid' ORDER BY due_date ASC"
+            sql = f"SELECT {columns} FROM invoices WHERE payment_status = 'Unpaid' ORDER BY due_date ASC"
         elif "paid" in query_lower:
-            sql = "SELECT * FROM invoices WHERE payment_status = 'Paid' ORDER BY invoice_date DESC"
+            sql = f"SELECT {columns} FROM invoices WHERE payment_status = 'Paid' ORDER BY invoice_date DESC"
         elif "overdue" in query_lower:
-            sql = "SELECT * FROM invoices WHERE payment_status = 'Unpaid' AND due_date < CURRENT_DATE ORDER BY due_date ASC"
+            sql = f"SELECT {columns} FROM invoices WHERE payment_status = 'Unpaid' AND due_date < CURRENT_DATE ORDER BY due_date ASC"
         elif "this year" in query_lower:
-            sql = f"SELECT * FROM invoices WHERE EXTRACT(YEAR FROM invoice_date::DATE) = {datetime.now().year}"
+            sql = f"SELECT {columns} FROM invoices WHERE EXTRACT(YEAR FROM invoice_date::DATE) = {datetime.now().year}"
         elif "last year" in query_lower:
-            sql = f"SELECT * FROM invoices WHERE EXTRACT(YEAR FROM invoice_date::DATE) = {datetime.now().year - 1}"
+            sql = f"SELECT {columns} FROM invoices WHERE EXTRACT(YEAR FROM invoice_date::DATE) = {datetime.now().year - 1}"
         else:
-            # Search across multiple fields
+            # Search across multiple fields - ensure we're using proper column names
             sql = f"""
-            SELECT * FROM invoices 
+            SELECT 
+                fund_paid_by,
+                invoice_number, 
+                vendor_name, 
+                amount, 
+                invoice_date, 
+                due_date, 
+                payment_status,
+                dateofpayment,
+                approver,
+                invoice_id
+            FROM invoices 
             WHERE invoice_number ILIKE '%{query_text}%' 
-               OR vendor ILIKE '%{query_text}%'
+               OR vendor_name ILIKE '%{query_text}%'
                OR payment_status ILIKE '%{query_text}%'
                OR fund_paid_by ILIKE '%{query_text}%'
             ORDER BY invoice_date DESC
@@ -766,12 +1068,19 @@ class UnifiedDashboard:
                 
             # Add rows to tree
             for row in result['rows']:
-                # Format values
+                # Extract needed columns for display - preserve all columns that match treeview
+                display_values = row
+                
+                # Remove any extra columns beyond what treeview displays (like invoice_id)
+                if len(row) > 9:  # We display 9 columns in the treeview
+                    display_values = row[:9]
+                
+                # Format values for display
                 formatted_values = []
-                for i, value in enumerate(row):
+                for i, value in enumerate(display_values):
                     if isinstance(value, (datetime, date)):
-                        formatted_values.append(value.strftime('%Y-%m-%d'))
-                    elif isinstance(value, (int, float)) and i == 2:  # Amount column
+                        formatted_values.append(value.strftime('%m/%d/%Y'))
+                    elif isinstance(value, (int, float)) and i == 3:  # Amount column (index 3 with new order)
                         try:
                             num_value = float(value)
                             formatted_values.append(f"${num_value:,.2f}")
@@ -779,7 +1088,7 @@ class UnifiedDashboard:
                             formatted_values.append("$0.00")
                     else:
                         formatted_values.append(str(value) if value is not None else "")
-                
+            
                 # Insert into tree
                 self.invoice_tree.insert("", "end", values=formatted_values)
             
@@ -821,10 +1130,21 @@ class UnifiedDashboard:
         item = selected_items[0]
         values = self.invoice_tree.item(item, "values")
         
+        # Get invoice_id for this invoice - needed for updates
+        query = f"""
+        SELECT invoice_id FROM invoices 
+        WHERE invoice_number = '{values[1]}'
+        LIMIT 1
+        """
+        result = self.db_manager.db.execute_query(query)
+        invoice_id = None
+        if not result.get('error') and result['rows']:
+            invoice_id = result['rows'][0][0]
+        
         # Create details window
         details_window = tk.Toplevel(self.parent)
-        details_window.title(f"Invoice Details: {values[0]}")
-        details_window.geometry("500x400")
+        details_window.title(f"Invoice Details: {values[1]}")  # Using invoice_number (index 1)
+        details_window.geometry("550x480")
         details_window.configure(bg="#1e1e2e")
         
         # Main content frame
@@ -832,7 +1152,7 @@ class UnifiedDashboard:
         content_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
         
         # Header
-        header_label = ttk.Label(content_frame, text=f"Invoice #{values[0]}", 
+        header_label = ttk.Label(content_frame, text=f"Invoice #{values[1]}", 
                                font=('Segoe UI', 16, 'bold'))
         header_label.pack(pady=(0, 15))
         
@@ -840,32 +1160,63 @@ class UnifiedDashboard:
         details_frame = ttk.Frame(content_frame)
         details_frame.pack(fill=tk.BOTH, expand=True)
         
-        # Field labels and values
+        # Create variables to hold editable fields
+        approver_var = tk.StringVar(value=values[8] if len(values) > 8 and values[8] else "")
+        status_var = tk.StringVar(value=values[6] if values[6] else "")
+        
+        # Get valid status options
+        status_options = ["Paid", "Unpaid", "Pending", "Approved", "Overdue"]
+        
+        # Field labels and values - updated for the new column order
         fields = [
-            ("Vendor", values[1]),
-            ("Amount", values[2]),
-            ("Invoice Date", values[3]),
-            ("Due Date", values[4]),
-            ("Status", values[5]),
-            ("Fund", values[6])
+            ("Fund", values[0], None),
+            ("Invoice Number", values[1], None),
+            ("Vendor Name", values[2], None),
+            ("Amount", values[3], None),
+            ("Invoice Date", values[4], None),
+            ("Due Date", values[5], None),
+            ("Status", values[6], status_var),
+            ("Payment Date", values[7] if len(values) > 7 else "", None),
+            ("Approver", values[8] if len(values) > 8 else "", approver_var)
         ]
         
         row = 0
-        for label, value in fields:
+        for label, value, var in fields:
             # Label
             field_label = ttk.Label(details_frame, text=f"{label}:", 
                                   font=('Segoe UI', 11, 'bold'))
             field_label.grid(row=row, column=0, sticky=tk.W, padx=5, pady=8)
             
-            # Value
-            value_label = ttk.Label(details_frame, text=value, font=('Segoe UI', 11))
-            value_label.grid(row=row, column=1, sticky=tk.W, padx=5, pady=8)
+            # Value - either static or editable
+            if var is not None:
+                if label == "Status":
+                    field_input = ttk.Combobox(details_frame, textvariable=var, 
+                                           values=status_options, width=20)
+                    field_input.grid(row=row, column=1, sticky=tk.W, padx=5, pady=8)
+                else:
+                    field_input = ttk.Entry(details_frame, textvariable=var, width=25)
+                    field_input.grid(row=row, column=1, sticky=tk.W, padx=5, pady=8)
+            else:
+                value_label = ttk.Label(details_frame, text=value, font=('Segoe UI', 11))
+                value_label.grid(row=row, column=1, sticky=tk.W, padx=5, pady=8)
             
             row += 1
+        
+        # Add helpful text for approver field
+        hint_label = ttk.Label(details_frame, text="Enter the name of the person who approved this invoice",
+                             font=('Segoe UI', 9, 'italic'), foreground="#aaaaaa")
+        hint_label.grid(row=8, column=1, sticky=tk.W, padx=5, pady=(0, 8))
         
         # Button frame
         button_frame = ttk.Frame(details_window)
         button_frame.pack(fill=tk.X, padx=20, pady=15)
+        
+        # Save button - only show if invoice_id was found
+        if invoice_id:
+            save_button = ttk.Button(button_frame, text="Save Changes", 
+                                   command=lambda: self.save_invoice_changes(
+                                       invoice_id, approver_var.get(), status_var.get(), details_window))
+            save_button.pack(side=tk.RIGHT, padx=5)
         
         # Close button
         close_button = ttk.Button(button_frame, text="Close", 
@@ -1074,6 +1425,11 @@ class UnifiedDashboard:
                                       command=self.fix_missing_columns)
         fix_columns_button.pack(fill=tk.X, pady=5)
         
+        # Fix vendor column button
+        fix_vendor_button = ttk.Button(fix_frame, text="Fix Vendor Name Column", 
+                                     command=self.fix_vendor_column_issue)
+        fix_vendor_button.pack(fill=tk.X, pady=5)
+        
         # Log area
         log_frame = ttk.LabelFrame(parent, text="Fix Operations Log")
         log_frame.pack(fill=tk.BOTH, expand=True, pady=10)
@@ -1196,9 +1552,9 @@ class UnifiedDashboard:
                 # Check for date-like content in the column
                 date_check_query = f"""
                 SELECT COUNT(*) FROM {table}
-                WHERE {column} ~ '^\d{{4}}-\d{{2}}-\d{{2}}$'
-                   OR {column} ~ '^\d{{2}}/\d{{2}}/\d{{4}}$'
-                   OR {column} ~ '^\d{{2}}-\d{{2}}-\d{{4}}$'
+                WHERE {column} ~ '^\\d{{4}}-\\d{{2}}-\\d{{2}}$'
+                   OR {column} ~ '^\\d{{2}}/\\d{{2}}/\\d{{4}}$'
+                   OR {column} ~ '^\\d{{2}}-\\d{{2}}-\\d{{4}}$'
                 """
                 
                 check_result = self.db_manager.db.execute_query(date_check_query)
@@ -1267,7 +1623,7 @@ class UnifiedDashboard:
                         'invoice_number': 'VARCHAR(50)',
                         'invoice_date': 'DATE',
                         'amount': 'NUMERIC(15,2)',
-                        'vendor': 'VARCHAR(100)',
+                        'vendor_name': 'VARCHAR(100)',
                         'payment_status': 'VARCHAR(20)'
                     },
                     'optional': {
@@ -1380,12 +1736,47 @@ class UnifiedDashboard:
             self.diag_log.delete(1.0, tk.END)
             self.diag_log.insert(tk.END, "Running data integrity checks...\n\n")
             
+            # Check table schema first
+            self.diag_log.insert(tk.END, "Checking database schema structure:\n")
+            schema_query = """
+            SELECT column_name, data_type 
+            FROM information_schema.columns 
+            WHERE table_name = 'invoices'
+            ORDER BY ordinal_position
+            """
+            
+            schema_result = self.db_manager.db.execute_query(schema_query)
+            if not schema_result.get('error') and schema_result['rows']:
+                self.diag_log.insert(tk.END, "Columns in invoices table:\n")
+                for col in schema_result['rows']:
+                    self.diag_log.insert(tk.END, f"- {col[0]} ({col[1]})\n")
+                
+                # Check for vendor_name column specifically
+                vendor_col_found = False
+                for col in schema_result['rows']:
+                    if col[0].lower() == 'vendor_name':
+                        vendor_col_found = True
+                        self.diag_log.insert(tk.END, f"\nVendor name column found as '{col[0]}' with type {col[1]}\n")
+                        break
+                
+                if not vendor_col_found:
+                    self.diag_log.insert(tk.END, "\nWARNING: vendor_name column not found in schema!\n")
+                    
+                    # Check if vendor column exists instead
+                    for col in schema_result['rows']:
+                        if col[0].lower() == 'vendor':
+                            self.diag_log.insert(tk.END, f"Found 'vendor' column instead with type {col[1]}\n")
+                            self.diag_log.insert(tk.END, "This may cause display issues in the dashboard.\n")
+                            break
+            else:
+                self.diag_log.insert(tk.END, f"Error checking schema: {schema_result.get('error', 'Unknown error')}\n")
+            
             # Check for NULL values in important columns
-            self.diag_log.insert(tk.END, "Checking for NULL values in important columns:\n")
+            self.diag_log.insert(tk.END, "\nChecking for NULL values in important columns:\n")
             
             null_check_queries = [
                 "SELECT COUNT(*) FROM invoices WHERE invoice_number IS NULL",
-                "SELECT COUNT(*) FROM invoices WHERE vendor IS NULL",
+                "SELECT COUNT(*) FROM invoices WHERE vendor_name IS NULL",
                 "SELECT COUNT(*) FROM invoices WHERE amount IS NULL",
                 "SELECT COUNT(*) FROM invoices WHERE payment_status IS NULL"
             ]
@@ -1396,6 +1787,41 @@ class UnifiedDashboard:
                     count = result['rows'][0][0]
                     column = query.split("WHERE ")[1].split(" IS NULL")[0]
                     self.diag_log.insert(tk.END, f"- {column}: {count} NULL values\n")
+                elif result.get('error'):
+                    # Check if the error is due to a missing column
+                    error_msg = str(result.get('error', ''))
+                    if "column" in error_msg and "does not exist" in error_msg:
+                        column = query.split("WHERE ")[1].split(" IS NULL")[0]
+                        self.diag_log.insert(tk.END, f"- ERROR: Column {column} does not exist\n")
+            
+            # Check for a sample of data
+            self.diag_log.insert(tk.END, "\nSample data (first 3 rows):\n")
+            sample_query = """
+            SELECT invoice_number, vendor_name, amount, payment_status, fund_paid_by
+            FROM invoices
+            LIMIT 3
+            """
+            
+            sample_result = self.db_manager.db.execute_query(sample_query)
+            if not sample_result.get('error') and sample_result['rows']:
+                for i, row in enumerate(sample_result['rows']):
+                    self.diag_log.insert(tk.END, f"Row {i+1}: {row}\n")
+            elif sample_result.get('error'):
+                error_msg = str(sample_result.get('error', ''))
+                self.diag_log.insert(tk.END, f"Error fetching sample: {error_msg}\n")
+                
+                # Try alternative query without vendor_name
+                alt_query = """
+                SELECT invoice_number, amount, payment_status, fund_paid_by
+                FROM invoices
+                LIMIT 3
+                """
+                
+                alt_result = self.db_manager.db.execute_query(alt_query)
+                if not alt_result.get('error') and alt_result['rows']:
+                    self.diag_log.insert(tk.END, "Alternative query without vendor_name succeeded:\n")
+                    for i, row in enumerate(alt_result['rows']):
+                        self.diag_log.insert(tk.END, f"Row {i+1}: {row}\n")
             
             # Check for future dates
             self.diag_log.insert(tk.END, "\nChecking for future invoice dates:\n")
@@ -1437,7 +1863,7 @@ class UnifiedDashboard:
             test_queries = [
                 ("Simple SELECT", "SELECT COUNT(*) FROM invoices"),
                 ("Filtered SELECT", "SELECT COUNT(*) FROM invoices WHERE payment_status = 'Paid'"),
-                ("Join Query", "SELECT i.invoice_number, v.name FROM invoices i JOIN vendors v ON i.vendor = v.name LIMIT 10"),
+                ("Join Query", "SELECT i.invoice_number, v.name FROM invoices i JOIN vendors v ON i.vendor_name = v.name LIMIT 10"),
                 ("Group By Query", "SELECT payment_status, COUNT(*) FROM invoices GROUP BY payment_status")
             ]
             
@@ -1464,5 +1890,231 @@ class UnifiedDashboard:
         except Exception as e:
             self.diag_log.insert(tk.END, f"Error during performance testing: {str(e)}\n")
 
-    # Now add all the methods you defined in your proposal
-    # ... 
+    def save_invoice_changes(self, invoice_id, approver, status, details_window):
+        """Save changes to invoice approver and status"""
+        try:
+            # Validate the invoice_id
+            if not invoice_id:
+                messagebox.showerror("Error", "Cannot update invoice: missing invoice ID")
+                return
+                
+            # Format and validate the approver value
+            approver = approver.strip() if approver else None
+            
+            # Update the database
+            update_query = """
+            UPDATE invoices
+            SET approver = %s, payment_status = %s
+            WHERE invoice_id = %s
+            """
+            
+            result = self.db_manager.db.execute_query(update_query, [approver, status, invoice_id])
+            
+            if 'error' in result and result['error']:
+                messagebox.showerror("Update Error", f"Failed to update invoice: {result['error']}")
+                return
+                
+            # Show success message and close window
+            messagebox.showinfo("Success", "Invoice updated successfully")
+            details_window.destroy()
+            
+            # Refresh the view to show updated data
+            self.apply_filters()
+            
+        except Exception as e:
+            messagebox.showerror("Error", f"An error occurred while updating: {str(e)}")
+            logger.error(f"Error saving invoice changes: {str(e)}")
+    
+    def fix_vendor_column_issue(self):
+        """Fix vendor/vendor_name column inconsistency issues"""
+        try:
+            self.fix_log.delete(1.0, tk.END)
+            self.fix_log.insert(tk.END, "Starting vendor column fix...\n")
+            
+            # Check if invoices table exists
+            table_check_query = """
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_name = 'invoices'
+            )
+            """
+            table_result = self.db_manager.db.execute_query(table_check_query)
+            
+            if not table_result.get('error') and table_result['rows'] and table_result['rows'][0][0]:
+                self.fix_log.insert(tk.END, "Invoices table found, checking columns...\n")
+                
+                # Check for vendor and vendor_name columns
+                columns_query = """
+                SELECT column_name, data_type, column_default, is_nullable
+                FROM information_schema.columns
+                WHERE table_name = 'invoices' 
+                AND column_name IN ('vendor', 'vendor_name')
+                """
+                
+                columns_result = self.db_manager.db.execute_query(columns_query)
+                
+                if not columns_result.get('error') and columns_result['rows']:
+                    # Create lookup dictionaries for the columns
+                    columns = {}
+                    for col in columns_result['rows']:
+                        col_name = col[0].lower()
+                        columns[col_name] = {
+                            'data_type': col[1],
+                            'default': col[2],
+                            'nullable': col[3] == 'YES'
+                        }
+                    
+                    has_vendor = 'vendor' in columns
+                    has_vendor_name = 'vendor_name' in columns
+                    
+                    self.fix_log.insert(tk.END, f"Found vendor column: {has_vendor}\n")
+                    self.fix_log.insert(tk.END, f"Found vendor_name column: {has_vendor_name}\n")
+                    
+                    # Fix scenario 1: Only vendor exists, rename to vendor_name
+                    if has_vendor and not has_vendor_name:
+                        self.fix_log.insert(tk.END, "Only vendor column exists. Renaming to vendor_name...\n")
+                        
+                        rename_query = """
+                        ALTER TABLE invoices
+                        RENAME COLUMN vendor TO vendor_name
+                        """
+                        
+                        result = self.db_manager.db.execute_query(rename_query)
+                        
+                        if not result.get('error'):
+                            self.fix_log.insert(tk.END, "Successfully renamed vendor column to vendor_name\n")
+                        else:
+                            self.fix_log.insert(tk.END, f"Error renaming column: {result.get('error')}\n")
+                    
+                    # Fix scenario 2: Both columns exist, copy data to vendor_name and drop vendor
+                    elif has_vendor and has_vendor_name:
+                        self.fix_log.insert(tk.END, "Both vendor and vendor_name columns exist\n")
+                        
+                        # Check if vendor_name has NULL values that could be filled from vendor
+                        check_query = """
+                        SELECT COUNT(*) FROM invoices 
+                        WHERE vendor_name IS NULL AND vendor IS NOT NULL
+                        """
+                        
+                        check_result = self.db_manager.db.execute_query(check_query)
+                        
+                        if not check_result.get('error') and check_result['rows']:
+                            null_count = check_result['rows'][0][0]
+                            
+                            if null_count > 0:
+                                self.fix_log.insert(tk.END, f"Found {null_count} rows where vendor_name is NULL but vendor has values\n")
+                                self.fix_log.insert(tk.END, "Copying data from vendor to vendor_name where needed...\n")
+                                
+                                # Copy data from vendor to vendor_name where vendor_name is NULL
+                                update_query = """
+                                UPDATE invoices
+                                SET vendor_name = vendor
+                                WHERE vendor_name IS NULL AND vendor IS NOT NULL
+                                """
+                                
+                                update_result = self.db_manager.db.execute_query(update_query)
+                                
+                                if not update_result.get('error'):
+                                    self.fix_log.insert(tk.END, f"Successfully copied data for {null_count} rows\n")
+                                else:
+                                    self.fix_log.insert(tk.END, f"Error copying data: {update_result.get('error')}\n")
+                            else:
+                                self.fix_log.insert(tk.END, "No NULL vendor_name values that need filling from vendor\n")
+                        
+                        # Drop the vendor column since vendor_name is the column our code uses
+                        self.fix_log.insert(tk.END, "Dropping redundant vendor column...\n")
+                        
+                        drop_query = """
+                        ALTER TABLE invoices
+                        DROP COLUMN vendor
+                        """
+                        
+                        drop_result = self.db_manager.db.execute_query(drop_query)
+                        
+                        if not drop_result.get('error'):
+                            self.fix_log.insert(tk.END, "Successfully dropped vendor column\n")
+                        else:
+                            self.fix_log.insert(tk.END, f"Error dropping column: {drop_result.get('error')}\n")
+                    
+                    # Fix scenario 3: Neither column exists, add vendor_name
+                    elif not has_vendor and not has_vendor_name:
+                        self.fix_log.insert(tk.END, "Neither vendor nor vendor_name columns exist\n")
+                        self.fix_log.insert(tk.END, "Adding vendor_name column...\n")
+                        
+                        add_query = """
+                        ALTER TABLE invoices
+                        ADD COLUMN vendor_name VARCHAR(100)
+                        """
+                        
+                        add_result = self.db_manager.db.execute_query(add_query)
+                        
+                        if not add_result.get('error'):
+                            self.fix_log.insert(tk.END, "Successfully added vendor_name column\n")
+                        else:
+                            self.fix_log.insert(tk.END, f"Error adding column: {add_result.get('error')}\n")
+                    
+                    # Scenario 4: Only vendor_name exists, which is correct
+                    else:
+                        self.fix_log.insert(tk.END, "vendor_name column already exists - no fix needed\n")
+                        
+                    # Validate foreign key relationship with vendors table
+                    self.fix_log.insert(tk.END, "\nChecking relationship with vendors table...\n")
+                    
+                    vendors_check_query = """
+                    SELECT EXISTS (
+                        SELECT FROM information_schema.tables 
+                        WHERE table_name = 'vendors'
+                    )
+                    """
+                    vendors_result = self.db_manager.db.execute_query(vendors_check_query)
+                    
+                    if not vendors_result.get('error') and vendors_result['rows'] and vendors_result['rows'][0][0]:
+                        self.fix_log.insert(tk.END, "Vendors table exists\n")
+                        
+                        # Check if vendors table has name column (used in JOIN with vendor_name)
+                        name_check_query = """
+                        SELECT EXISTS (
+                            SELECT FROM information_schema.columns
+                            WHERE table_name = 'vendors' AND column_name = 'name'
+                        )
+                        """
+                        name_result = self.db_manager.db.execute_query(name_check_query)
+                        
+                        if not name_result.get('error') and name_result['rows'] and name_result['rows'][0][0]:
+                            self.fix_log.insert(tk.END, "Vendors table has 'name' column - correct for joins\n")
+                        else:
+                            self.fix_log.insert(tk.END, "WARNING: Vendors table does not have 'name' column\n")
+                            self.fix_log.insert(tk.END, "This may cause join issues with the vendor_name column\n")
+                    else:
+                        self.fix_log.insert(tk.END, "Vendors table does not exist\n")
+                    
+                else:
+                    self.fix_log.insert(tk.END, f"Error checking columns: {columns_result.get('error', 'No columns found')}\n")
+            else:
+                self.fix_log.insert(tk.END, "Invoices table does not exist or could not be checked\n")
+            
+            # Verify the dashboard works with the current column structure
+            verify_query = """
+            SELECT
+                invoice_number,
+                vendor_name,
+                amount,
+                payment_status
+            FROM invoices
+            LIMIT 5
+            """
+            
+            verify_result = self.db_manager.db.execute_query(verify_query)
+            
+            if not verify_result.get('error'):
+                self.fix_log.insert(tk.END, "\nVerification query succeeded using vendor_name column\n")
+                self.fix_log.insert(tk.END, f"Found {len(verify_result.get('rows', []))} sample rows\n")
+                self.fix_log.insert(tk.END, "Dashboard should now work correctly with vendor_name column\n")
+            else:
+                self.fix_log.insert(tk.END, f"\nVerification query failed: {verify_result.get('error')}\n")
+                self.fix_log.insert(tk.END, "There may still be issues with the vendor_name column\n")
+            
+            self.fix_log.insert(tk.END, "\nVendor column fix complete.\n")
+            
+        except Exception as e:
+            self.fix_log.insert(tk.END, f"Error during vendor column fix: {str(e)}\n")

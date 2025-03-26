@@ -6,18 +6,37 @@ Provides a unified interface for database operations.
 """
 
 import logging
+import os
+import time
 from typing import Dict, List, Any, Optional
 from .postgres_db import PostgresDatabase
 from finance_assistant.schema_validator import SchemaValidator
 import csv
-import os
 import threading
 import re
 import difflib
 import tkinter as tk
 from tkinter import ttk, messagebox
 
-logger = logging.getLogger(__name__)
+# Import the ultimate logger
+from ultimate_logger import (
+    configure_ultimate_logging, 
+    log_execution_time, 
+    log_context, 
+    log_with_error_code,
+    log_state_transition,
+    log_database_query
+)
+
+# Configure component logger
+logger = configure_ultimate_logging(
+    app_name="finance_db_assistant",
+    component_name="database_manager",
+    log_level=os.getenv("LOG_LEVEL", "INFO"),
+    console_output=True,
+    file_output=True,
+    file_path="logs/finance_app.log"
+)
 
 class DatabaseManager:
     """Database manager that provides a unified interface for database operations"""
@@ -28,12 +47,15 @@ class DatabaseManager:
         Args:
             app: Optional reference to the main application
         """
-        self.app = app
-        self.db = PostgresDatabase()
-        self.connected = False
-        self.tables = []  # Add tables list attribute
-        self.schema_validator = None  # Schema validator instance
-        
+        with log_context(logger, action="initialize_db_manager"):
+            self.app = app
+            self.db = PostgresDatabase()
+            self.connected = False
+            self.tables = []  # Add tables list attribute
+            self.schema_validator = None  # Schema validator instance
+            logger.info("Database manager initialized")
+            
+    @log_execution_time(logger)
     def connect_to_database(self, db_name: str, host: str = "localhost", 
                           port: int = 5432, user: str = "postgres", 
                           password: str = None) -> tuple[bool, str]:
@@ -49,70 +71,110 @@ class DatabaseManager:
         Returns:
             tuple: (success, message)
         """
-        try:
-            # Connect using PostgresDatabase
-            if self.db.connect(db_name, host, port, user, password):
-                self.connected = True
-                # Retrieve table list after successful connection
-                self._fetch_tables()
-                
-                # Initialize and use schema validator
-                self._initialize_schema_validator()
-                
-                return True, f"Successfully connected to database '{db_name}'"
-            else:
-                return False, f"Failed to connect: {self.db.error}"
-        except Exception as e:
-            logger.error(f"Error connecting to database: {str(e)}")
-            return False, f"Failed to connect: {str(e)}"
+        conn_context = {
+            "db_name": db_name,
+            "host": host,
+            "port": port,
+            "user": user,
+            "action": "connect_database"
+        }
+        
+        with log_context(logger, **conn_context):
+            try:
+                # Connect using PostgresDatabase
+                logger.info(f"Attempting to connect to database '{db_name}' on {host}:{port}")
+                if self.db.connect(db_name, host, port, user, password):
+                    self.connected = True
+                    self.db_name = db_name  # Store the database name
+                    
+                    # Retrieve table list after successful connection
+                    self._fetch_tables()
+                    
+                    # Initialize and use schema validator
+                    self._initialize_schema_validator()
+                    
+                    logger.info(f"Successfully connected to database '{db_name}'", 
+                                extra={"table_count": len(self.tables)})
+                    return True, f"Successfully connected to database '{db_name}'"
+                else:
+                    error_msg = self.db.error
+                    log_with_error_code(
+                        logger, 
+                        "DB_CONN_FAIL", 
+                        f"Failed to connect to database: {error_msg}",
+                        error_details=error_msg
+                    )
+                    return False, f"Failed to connect: {error_msg}"
+            except Exception as e:
+                error_msg = str(e)
+                logger.exception_with_context(f"Exception connecting to database: {error_msg}")
+                return False, f"Failed to connect: {error_msg}"
     
+    @log_execution_time(logger)
     def _initialize_schema_validator(self):
         """Initialize the schema validator and validate critical tables"""
-        try:
-            # Create schema validator instance
-            self.schema_validator = SchemaValidator(self)
-            
-            # Define tables to validate and fix
-            tables_to_validate = ['invoices', 'vendors', 'funds']
-            validation_results = {}
-            
-            for table in tables_to_validate:
-                if table in self.tables:
-                    logger.info(f"Validating and auto-fixing {table} table schema")
-                    
-                    # First check for missing columns (traditional validation)
-                    column_result = self.schema_validator.validate_table(table, auto_fix=True)
-                    
-                    # Then check and fix column types (enhanced validation)
-                    type_result = self.schema_validator.validate_table_schema(table, auto_fix=True)
-                    
-                    validation_results[table] = {
-                        'column_validation': column_result,
-                        'type_validation': type_result,
-                        'valid': column_result['valid'] and type_result['valid']
-                    }
-                    
-                    # Log validation results
-                    if validation_results[table]['valid']:
-                        logger.info(f"{table} table schema is valid")
+        with log_context(logger, action="initialize_schema_validator"):
+            try:
+                # Create schema validator instance
+                logger.info("Initializing schema validator")
+                self.schema_validator = SchemaValidator(self)
+                
+                # Define tables to validate and fix
+                tables_to_validate = ['invoices', 'vendors', 'funds']
+                validation_results = {}
+                
+                for table in tables_to_validate:
+                    if table in self.tables:
+                        logger.info(f"Validating and auto-fixing {table} table schema")
+                        
+                        # First check for missing columns (traditional validation)
+                        column_result = self.schema_validator.validate_table(table, auto_fix=True)
+                        
+                        # Then check and fix column types (enhanced validation)
+                        type_result = self.schema_validator.validate_table_schema(table, auto_fix=True)
+                        
+                        validation_results[table] = {
+                            'column_validation': column_result,
+                            'type_validation': type_result,
+                            'valid': column_result['valid'] and type_result['valid']
+                        }
+                        
+                        # Log validation results
+                        if validation_results[table]['valid']:
+                            logger.info(f"{table} table schema is valid")
+                        else:
+                            log_with_error_code(
+                                logger, 
+                                "SCHEMA_INVALID", 
+                                f"{table} table schema validation failed",
+                                table=table,
+                                validation_results=validation_results[table]
+                            )
                     else:
-                        logger.warning(f"{table} table schema validation failed: {validation_results[table]}")
-                else:
-                    logger.info(f"{table} table not found, will be created when needed")
-            
-            # Report any type conversions that were performed
-            if hasattr(self.schema_validator, 'type_conversions_performed') and self.schema_validator.type_conversions_performed:
-                conversions = self.schema_validator.type_conversions_performed
-                logger.info(f"Performed {len(conversions)} column type conversions")
-                for conversion in conversions:
-                    logger.info(f"Converted {conversion['table']}.{conversion['column']} from {conversion['from_type']} to {conversion['to_type']}")
+                        logger.info(f"{table} table not found, will be created when needed")
                 
-            return validation_results
-                
-        except Exception as e:
-            logger.error(f"Error initializing schema validator: {str(e)}")
-        return None
+                # Report any type conversions that were performed
+                if hasattr(self.schema_validator, 'type_conversions_performed') and self.schema_validator.type_conversions_performed:
+                    conversions = self.schema_validator.type_conversions_performed
+                    logger.info(f"Performed {len(conversions)} column type conversions")
+                    for conversion in conversions:
+                        log_state_transition(
+                            logger,
+                            "Column Type",
+                            conversion['from_type'],
+                            conversion['to_type'],
+                            table=conversion['table'],
+                            column=conversion['column']
+                        )
+                    
+                return validation_results
+                    
+            except Exception as e:
+                error_msg = str(e)
+                logger.exception_with_context(f"Error initializing schema validator: {error_msg}")
+            return None
         
+    @log_execution_time(logger)
     def ensure_valid_schema(self, table_name: str) -> bool:
         """Ensure that a table exists and has the correct schema
         
@@ -122,39 +184,73 @@ class DatabaseManager:
         Returns:
             bool: True if the table has a valid schema, False otherwise
         """
-        if not self.connected:
-            logger.error("Not connected to database")
-            return False
+        with log_context(logger, action="ensure_valid_schema", table=table_name):
+            if not self.connected:
+                log_with_error_code(logger, "DB_NOT_CONNECTED", "Not connected to database")
+                return False
+                
+            # Make sure schema validator is initialized
+            if not self.schema_validator:
+                logger.info("Schema validator not initialized, initializing now")
+                self._initialize_schema_validator()
+                
+            # Check and fix schema
+            logger.info(f"Ensuring valid schema for table {table_name}")
+            result = self.schema_validator.ensure_valid_schema(table_name)
             
-        # Make sure schema validator is initialized
-        if not self.schema_validator:
-            self._initialize_schema_validator()
-            
-        # Check and fix schema
-        return self.schema_validator.ensure_valid_schema(table_name)
+            if result:
+                logger.info(f"Table {table_name} has valid schema")
+            else:
+                log_with_error_code(
+                    logger, 
+                    "SCHEMA_VALIDATION_FAILED", 
+                    f"Failed to ensure valid schema for table {table_name}",
+                    table=table_name
+                )
+                
+            return result
     
+    @log_execution_time(logger)
     def _fetch_tables(self):
         """Fetch the list of tables from the database"""
-        if not self.connected or not self.db:
-            logger.warning("Cannot fetch tables: Not connected to database")
-            return
-            
-        try:
-            # Use the get_tables method from PostgresDatabase
-            result = self.db.get_tables()
-            
-            logger.info(f"Fetched tables result: {result}")
-            
-            if 'error' in result and result['error']:
-                logger.error(f"Error fetching tables: {result['error']}")
-            elif 'tables' in result:
-                self.tables = result['tables']
+        with log_context(logger, action="fetch_tables"):
+            if not self.connected or not self.db:
+                log_with_error_code(logger, "DB_NOT_CONNECTED", "Cannot fetch tables: Not connected to database")
+                return
                 
-                if not self.tables:
-                    logger.warning("No tables found in database. You may need to initialize with sample tables.")
-            
-        except Exception as e:
-            logger.error(f"Exception in _fetch_tables: {str(e)}")
+            try:
+                # Use the get_tables method from PostgresDatabase
+                logger.debug("Fetching tables from database")
+                result = self.db.get_tables()
+                
+                if 'error' in result and result['error']:
+                    log_with_error_code(
+                        logger, 
+                        "DB_FETCH_TABLES_ERROR", 
+                        f"Error fetching tables: {result['error']}",
+                        error_details=result['error']
+                    )
+                elif 'tables' in result:
+                    prev_tables = set(self.tables) if hasattr(self, 'tables') else set()
+                    self.tables = result['tables']
+                    new_tables = set(self.tables)
+                    
+                    added_tables = new_tables - prev_tables
+                    removed_tables = prev_tables - new_tables
+                    
+                    if added_tables:
+                        logger.info(f"Added tables: {', '.join(added_tables)}", extra={"added_tables": list(added_tables)})
+                    
+                    if removed_tables:
+                        logger.info(f"Removed tables: {', '.join(removed_tables)}", extra={"removed_tables": list(removed_tables)})
+                    
+                    logger.info(f"Fetched {len(self.tables)} tables from database", extra={"tables": self.tables})
+                    
+                    if not self.tables:
+                        logger.warning("No tables found in database. You may need to initialize with sample tables.")
+                
+            except Exception as e:
+                logger.exception_with_context(f"Exception in _fetch_tables: {str(e)}")
     
     @property
     def is_connected(self):
@@ -165,6 +261,7 @@ class DatabaseManager:
         """
         return self.connected
         
+    @log_execution_time(logger, level=logging.DEBUG)  # Lower level since this is called frequently
     def execute_query(self, query: str, params: List = None) -> Dict:
         """Execute a SQL query
         
@@ -175,10 +272,24 @@ class DatabaseManager:
         Returns:
             Dict: Query results
         """
-        if not self.connected:
-            return {'error': 'Not connected to a database'}
+        with log_context(logger, action="execute_query"):
+            if not self.connected:
+                log_with_error_code(logger, "DB_NOT_CONNECTED", "Not connected to a database")
+                return {'error': 'Not connected to a database'}
             
-        return self.db.execute_query(query, params)
+            # Record start time for performance measurement
+            start_time = time.time()
+            
+            # Execute the query
+            result = self.db.execute_query(query, params)
+            
+            # Calculate execution time
+            execution_time = (time.time() - start_time) * 1000  # Convert to ms
+            
+            # Use the enhanced database query logging
+            log_database_query(logger, query, params, result, execution_time)
+                
+            return result
     
     def get_invoice_data(self, filters=None):
         """Get invoice data with optional filters

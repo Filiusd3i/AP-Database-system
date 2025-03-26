@@ -6,7 +6,7 @@ Provides visualizations for invoice data from PostgreSQL.
 This is a simplified version that replaces the previous complex visualization system.
 """
 
-import logging
+import os
 import tkinter as tk
 from tkinter import ttk, messagebox
 import matplotlib.pyplot as plt
@@ -17,8 +17,24 @@ import time
 from typing import Dict, List, Any, Optional
 from datetime import datetime, timedelta
 
-# Configure logging
-logger = logging.getLogger(__name__)
+# Import the ultimate logger
+from ultimate_logger import (
+    configure_ultimate_logging, 
+    log_execution_time, 
+    log_context, 
+    log_with_error_code,
+    log_state_transition
+)
+
+# Configure component logger
+logger = configure_ultimate_logging(
+    app_name="finance_db_assistant",
+    component_name="dashboard",
+    log_level=os.getenv("LOG_LEVEL", "INFO"),
+    console_output=True,
+    file_output=True,
+    file_path="logs/finance_app.log"
+)
 
 # List of tables with spaces in their names
 TABLES_WITH_SPACES = ["Deal Allocations", "RAUM Allocations"]
@@ -33,6 +49,7 @@ class InvoiceDashboard:
             parent: The parent window
             db_manager: The database manager
         """
+        with log_context(logger, action="initialize_dashboard"):
         self.parent = parent
         self.db_manager = db_manager
         
@@ -42,35 +59,93 @@ class InvoiceDashboard:
         self.invoice_tree = None
         
         # Create the UI
+            logger.info("Creating dashboard UI")
         self.create_dashboard_ui()
         
         # Load initial data
+            logger.info("Loading initial dashboard data")
         self.update_dashboard()
         
-        logger.info("Invoice dashboard initialized")
+            logger.info("Invoice dashboard initialized", extra={"ui_state": "ready"})
     
+    @log_execution_time(logger)
     def create_dashboard_ui(self):
         """Create the dashboard UI elements"""
+        with log_context(logger, action="create_dashboard_ui"):
         # Main frame
         self.frame = ttk.Frame(self.parent)
         self.frame.pack(fill=tk.BOTH, expand=True)
         
         # Create summary cards at the top
+            logger.debug("Creating summary cards")
         self.create_summary_cards()
         
         # Create filter section
+            logger.debug("Creating filter section")
         self.create_filter_section()
         
         # Create chart section - make sure this initializes self.pie_ax and self.bar_ax
+            logger.debug("Creating charts section")
         self.create_charts_section()
         
         # Create invoice table section - make sure this initializes self.invoice_tree
+            logger.debug("Creating invoice table")
         self.create_invoice_table()
+            
+            logger.info("Dashboard UI created successfully")
     
+    def create_filter_section(self):
+        """Create the filter section in the dashboard"""
+        with log_context(logger, action="create_filter_section"):
+            # Create a frame for filters
+            filter_frame = ttk.LabelFrame(self.frame, text="Filters")
+            filter_frame.pack(fill=tk.X, padx=10, pady=5)
+            
+            # Create a container for the filters
+            filters_container = ttk.Frame(filter_frame)
+            filters_container.pack(fill=tk.X, padx=5, pady=5)
+            
+            # Status filter
+            ttk.Label(filters_container, text="Status:").pack(side=tk.LEFT, padx=(0, 5))
+            self.status_var = tk.StringVar()
+            status_combo = ttk.Combobox(filters_container, textvariable=self.status_var, 
+                                      values=["All", "Paid", "Unpaid", "Overdue"], width=10)
+            status_combo.pack(side=tk.LEFT, padx=(0, 15))
+            status_combo.current(0)  # Default to "All"
+            
+            # Fund filter
+            ttk.Label(filters_container, text="Fund:").pack(side=tk.LEFT, padx=(0, 5))
+            self.fund_var = tk.StringVar()
+            self.fund_combo = ttk.Combobox(filters_container, textvariable=self.fund_var, width=15)
+            self.fund_combo.pack(side=tk.LEFT, padx=(0, 15))
+            
+            # Date range filters
+            ttk.Label(filters_container, text="From:").pack(side=tk.LEFT, padx=(0, 5))
+            self.start_date_var = tk.StringVar()
+            start_date = ttk.Entry(filters_container, textvariable=self.start_date_var, width=10)
+            start_date.pack(side=tk.LEFT, padx=(0, 5))
+            
+            ttk.Label(filters_container, text="To:").pack(side=tk.LEFT, padx=(0, 5))
+            self.end_date_var = tk.StringVar()
+            end_date = ttk.Entry(filters_container, textvariable=self.end_date_var, width=10)
+            end_date.pack(side=tk.LEFT, padx=(0, 15))
+            
+            # Apply filter button
+            apply_button = ttk.Button(filters_container, text="Apply Filters", command=self.apply_filters)
+            apply_button.pack(side=tk.LEFT)
+            
+            # Update the fund filter combobox
+            self._update_fund_filter()
+            
+            logger.debug("Filter section created")
+    
+    @log_execution_time(logger)
     def create_charts_section(self):
         """Create the charts section"""
+        with log_context(logger, action="create_charts_section"):
         try:
             # Import matplotlib only when needed
+                logger.debug("Initializing matplotlib figures")
             from matplotlib.figure import Figure
             from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
             
@@ -98,9 +173,16 @@ class InvoiceDashboard:
             canvas2.draw()
             canvas2.get_tk_widget().pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
             
-        except ImportError:
+                logger.info("Charts initialized successfully")
+                
+            except ImportError as e:
             # If matplotlib is not available, create a label instead
-            logger.error("Matplotlib not available, charts disabled")
+                log_with_error_code(
+                    logger, 
+                    "UI_CHARTS_001", 
+                    "Matplotlib not available, charts disabled",
+                    error_details=str(e)
+                )
             charts_frame = ttk.LabelFrame(self.frame, text="Charts")
             charts_frame.pack(fill=tk.X, padx=10, pady=5)
             
@@ -112,8 +194,24 @@ class InvoiceDashboard:
             self.bar_ax = None
             self.charts_disabled = True
     
+            except Exception as e:
+                # Handle other exceptions
+                logger.exception_with_context(f"Error creating charts: {str(e)}")
+                
+                charts_frame = ttk.LabelFrame(self.frame, text="Charts")
+                charts_frame.pack(fill=tk.X, padx=10, pady=5)
+                
+                label = ttk.Label(charts_frame, text=f"Charts disabled: {str(e)}")
+                label.pack(pady=10)
+                
+                self.pie_ax = None
+                self.bar_ax = None
+                self.charts_disabled = True
+    
+    @log_execution_time(logger)
     def create_invoice_table(self):
         """Create the invoice table section"""
+        with log_context(logger, action="create_invoice_table"):
         # Create a frame for the table
         table_frame = ttk.LabelFrame(self.frame, text="Invoices")
         table_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
@@ -123,6 +221,7 @@ class InvoiceDashboard:
                   "status", "due_date", "fund")
         
         # Create the treeview
+            logger.debug("Creating invoice treeview with columns")
         self.invoice_tree = ttk.Treeview(table_frame, columns=columns, show="headings")
         
         # Define column headings
@@ -146,6 +245,7 @@ class InvoiceDashboard:
         self.invoice_tree.column("fund", width=100)
         
         # Add scrollbars
+            logger.debug("Adding scrollbars to invoice table")
         vsb = ttk.Scrollbar(table_frame, orient="vertical", command=self.invoice_tree.yview)
         self.invoice_tree.configure(yscrollcommand=vsb.set)
         vsb.pack(side=tk.RIGHT, fill=tk.Y)
@@ -157,22 +257,175 @@ class InvoiceDashboard:
         # Pack the treeview
         self.invoice_tree.pack(fill=tk.BOTH, expand=True)
     
+            # Add right-click menu
+            self._add_context_menu()
+            
+            logger.info("Invoice table created successfully")
+    
+    def _add_context_menu(self):
+        """Add a context menu to the invoice table"""
+        with log_context(logger, action="add_context_menu"):
+            # Create a popup menu
+            self.popup_menu = tk.Menu(self.invoice_tree, tearoff=0)
+            self.popup_menu.add_command(label="View Invoice Details", command=self._view_invoice_details)
+            self.popup_menu.add_command(label="Mark as Paid", command=self._mark_as_paid)
+            self.popup_menu.add_separator()
+            self.popup_menu.add_command(label="Delete", command=self._delete_invoice)
+            
+            # Bind right-click event
+            self.invoice_tree.bind("<Button-3>", self._show_popup_menu)
+            
+            logger.debug("Context menu added to invoice table")
+    
+    def _show_popup_menu(self, event):
+        """Show the popup menu on right-click"""
+        with log_context(logger, action="show_context_menu"):
+            # Select the item under the mouse
+            item = self.invoice_tree.identify_row(event.y)
+            if item:
+                logger.debug(f"Showing context menu for item {item}")
+                self.invoice_tree.selection_set(item)
+                self.popup_menu.post(event.x_root, event.y_root)
+    
+    def _view_invoice_details(self):
+        """View details of the selected invoice"""
+        with log_context(logger, action="view_invoice_details"):
+            selected = self.invoice_tree.selection()
+            if not selected:
+                logger.warning("No invoice selected for viewing")
+                return
+                
+            # Get the invoice ID from the selected item
+            invoice_id = self.invoice_tree.item(selected[0], "values")[0]
+            logger.info(f"Viewing details for invoice ID: {invoice_id}")
+            
+            # TODO: Implement invoice details view
+            messagebox.showinfo("Invoice Details", f"Details for Invoice ID: {invoice_id}\n\nThis feature is coming soon!")
+    
+    def _mark_as_paid(self):
+        """Mark the selected invoice as paid"""
+        with log_context(logger, action="mark_as_paid"):
+            selected = self.invoice_tree.selection()
+            if not selected:
+                logger.warning("No invoice selected to mark as paid")
+                return
+                
+            # Get the invoice ID from the selected item
+            invoice_id = self.invoice_tree.item(selected[0], "values")[0]
+            
+            # Confirm with the user
+            confirm = messagebox.askyesno("Confirm", f"Mark invoice #{invoice_id} as paid?")
+            if not confirm:
+                logger.info("User cancelled marking invoice as paid")
+                return
+                
+            logger.info(f"Marking invoice {invoice_id} as paid")
+            
+            # Update the database
+            query = "UPDATE invoices SET payment_status = 'Paid', paid_date = CURRENT_DATE WHERE id = %s"
+            result = self.db_manager.execute_query(query, [invoice_id])
+            
+            if result and 'error' not in result:
+                log_state_transition(
+                    logger,
+                    "Invoice",
+                    "Unpaid",
+                    "Paid",
+                    invoice_id=invoice_id
+                )
+                messagebox.showinfo("Success", "Invoice marked as paid")
+                # Refresh the dashboard
+                self.update_dashboard()
+            else:
+                error_msg = result.get('error', 'Unknown error')
+                log_with_error_code(
+                    logger,
+                    "DB_UPDATE_001",
+                    f"Error marking invoice as paid: {error_msg}",
+                    invoice_id=invoice_id,
+                    error_details=error_msg
+                )
+                messagebox.showerror("Error", f"Failed to update invoice: {error_msg}")
+    
+    def _delete_invoice(self):
+        """Delete the selected invoice"""
+        with log_context(logger, action="delete_invoice"):
+            selected = self.invoice_tree.selection()
+            if not selected:
+                logger.warning("No invoice selected for deletion")
+                return
+                
+            # Get the invoice ID and number from the selected item
+            values = self.invoice_tree.item(selected[0], "values")
+            invoice_id = values[0]
+            invoice_number = values[1]
+            
+            # Confirm with the user
+            confirm = messagebox.askyesno(
+                "Confirm Delete", 
+                f"Are you sure you want to delete invoice #{invoice_number}?\n\nThis action cannot be undone.",
+                icon="warning"
+            )
+            
+            if not confirm:
+                logger.info("User cancelled invoice deletion")
+                return
+                
+            logger.info(f"Deleting invoice {invoice_id} (#{invoice_number})")
+            
+            # Delete from the database
+            query = "DELETE FROM invoices WHERE id = %s"
+            result = self.db_manager.execute_query(query, [invoice_id])
+            
+            if result and 'error' not in result:
+                log_state_transition(
+                    logger,
+                    "Invoice",
+                    "Exists",
+                    "Deleted",
+                    invoice_id=invoice_id,
+                    invoice_number=invoice_number
+                )
+                messagebox.showinfo("Success", "Invoice deleted successfully")
+                # Refresh the dashboard
+                self.update_dashboard()
+            else:
+                error_msg = result.get('error', 'Unknown error')
+                log_with_error_code(
+                    logger,
+                    "DB_DELETE_001",
+                    f"Error deleting invoice: {error_msg}",
+                    invoice_id=invoice_id,
+                    invoice_number=invoice_number,
+                    error_details=error_msg
+                )
+                messagebox.showerror("Error", f"Failed to delete invoice: {error_msg}")
+    
+    @log_execution_time(logger)
     def update_charts(self):
         """Update the charts with current data"""
+        with log_context(logger, action="update_charts"):
         # Skip if charts are disabled or not initialized
         if not hasattr(self, 'pie_ax') or self.pie_ax is None:
-            logger.error("Charts not initialized, skipping update")
+                log_with_error_code(
+                    logger, 
+                    "UI_CHARTS_002", 
+                    "Charts not initialized, skipping update"
+                )
             return
             
         if hasattr(self, 'charts_disabled') and self.charts_disabled:
+                logger.debug("Charts disabled, skipping update")
             return
             
         try:
             # Clear the charts
+                logger.debug("Clearing existing charts")
             self.pie_ax.clear()
             self.bar_ax.clear()
             
             # Get data for pie chart (status distribution)
+                logger.debug("Fetching invoice count data for pie chart")
             result = self.db_manager.get_invoice_counts()
             
             if result and isinstance(result, dict):
@@ -185,593 +438,300 @@ class InvoiceDashboard:
                 
                 # Redraw
                 self.pie_ax.figure.canvas.draw()
+                    logger.debug(f"Updated pie chart with {len(labels)} status categories")
+                else:
+                    logger.warning("No invoice count data for pie chart")
             
             # Get data for bar chart (monthly totals)
-            # This would normally come from a database query
-            # For now using placeholder data
-            months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun']
-            values = [5000, 7000, 3000, 8000, 6000, 9000]
+                logger.debug("Fetching fund distribution data for bar chart")
+                result = self.db_manager.get_fund_distribution()
+                
+                if result and isinstance(result, dict):
+                    funds = list(result.keys())
+                    amounts = list(result.values())
             
             # Create bar chart
-            self.bar_ax.bar(months, values)
-            self.bar_ax.set_title('Monthly Totals')
+                    self.bar_ax.bar(funds, amounts)
+                    self.bar_ax.set_title('Funding Sources')
+                    
+                    # Set x-axis labels at an angle for better readability
+                    self.bar_ax.set_xticklabels(funds, rotation=45, ha='right')
+                    
+                    # Adjust layout to make room for rotated labels
+                    self.bar_ax.figure.tight_layout()
             
             # Redraw
             self.bar_ax.figure.canvas.draw()
+                    logger.debug(f"Updated bar chart with {len(funds)} funding sources")
+                else:
+                    logger.warning("No fund distribution data for bar chart")
             
         except Exception as e:
-            logger.error(f"Error updating charts: {str(e)}")
+                logger.exception_with_context(f"Error updating charts: {str(e)}")
     
+    @log_execution_time(logger)
     def update_invoice_table(self):
         """Update the invoice table with data"""
+        with log_context(logger, action="update_invoice_table"):
         # Check if invoice_tree is initialized
         if not hasattr(self, 'invoice_tree') or self.invoice_tree is None:
-            logger.error("Invoice table not initialized, skipping update")
+                log_with_error_code(
+                    logger, 
+                    "UI_TABLE_001", 
+                    "Invoice table not initialized, skipping update"
+                )
             return
             
         try:
             # Clear existing items
+                logger.debug("Clearing existing invoice table entries")
             for item in self.invoice_tree.get_children():
                 self.invoice_tree.delete(item)
             
             # Get invoice data
+                logger.debug("Fetching recent invoice data")
             result = self.db_manager.get_recent_invoices(50)  # Get up to 50 recent invoices
             
             if result and 'rows' in result and result['rows']:
                 # Format and insert rows
+                    logger.debug(f"Processing {len(result['rows'])} invoices for display")
                 for i, row in enumerate(result['rows']):
                     # Format values appropriately
                     formatted_row = []
-                    for val in row:
-                        if isinstance(val, (datetime.datetime, datetime.date)):
+                        for j, val in enumerate(row):
+                            if isinstance(val, (datetime, datetime.date)):
                             formatted_row.append(val.strftime('%Y-%m-%d'))
-                        elif isinstance(val, (int, float)) and len(formatted_row) == 4:  # Assuming 5th column is amount
+                            elif isinstance(val, (int, float)) and j == 4:  # Assuming 5th column is amount
                             formatted_row.append(f"${val:,.2f}")
                         else:
                             formatted_row.append(str(val) if val is not None else "")
                     
                     # Insert into treeview
                     self.invoice_tree.insert("", tk.END, values=formatted_row)
+                        
+                        # Add color-coding based on status
+                        if len(formatted_row) > 5:  # Make sure status column exists
+                            status = formatted_row[5].lower()
+                            item_id = self.invoice_tree.get_children()[-1]
+                            
+                            if status == 'paid':
+                                self.invoice_tree.item(item_id, tags=('paid',))
+                            elif status == 'overdue':
+                                self.invoice_tree.item(item_id, tags=('overdue',))
+                    
+                    # Configure tags for coloring
+                    self.invoice_tree.tag_configure('paid', background='#e6ffe6')  # Light green
+                    self.invoice_tree.tag_configure('overdue', background='#ffe6e6')  # Light red
                 
                 logger.info(f"Updated invoice table with {len(result['rows'])} invoices")
             else:
                 logger.info("No invoice data to display")
                 
         except Exception as e:
-            logger.error(f"Error updating invoice table: {str(e)}")
+                logger.exception_with_context(f"Error updating invoice table: {str(e)}")
     
+    @log_execution_time(logger)
     def update_dashboard(self):
         """Update all dashboard elements"""
-        try:
+        with log_context(logger, action="update_dashboard"):
+            try:
+                # Validate the invoices table exists
+                if not self._validate_invoices_table():
+                    log_with_error_code(
+                        logger, 
+                        "DB_TABLE_MISSING", 
+                        "Invoices table is missing or invalid"
+                    )
+                    return
+                
             # Update summary cards
+                logger.debug("Updating summary cards")
             self.update_summary_cards()
             
             # Update charts
+                logger.debug("Updating charts")
             self.update_charts()
             
             # Update invoice table
+                logger.debug("Updating invoice table")
             self.update_invoice_table()
             
-            logger.info(f"Dashboard updated with {len(self.invoice_tree.get_children() if self.invoice_tree else [])} invoices")
+                # Update fund filter
+                logger.debug("Updating fund filter")
+                self._update_fund_filter()
+                
+                logger.info("Dashboard updated successfully")
             
         except Exception as e:
-            logger.error(f"Error updating dashboard: {str(e)}")
+                logger.exception_with_context(f"Error updating dashboard: {str(e)}")
+                messagebox.showerror("Error", f"Failed to update dashboard: {str(e)}")
+                
+    def create_summary_cards(self):
+        """Create the summary cards section"""
+        # Implementation for summary cards
+        pass
+        
+    def update_summary_cards(self):
+        """Update the summary cards with current data"""
+        # Implementation for updating summary cards
+        pass
     
     def _validate_invoices_table(self):
-        """Validate that the invoices table exists and has the required schema
-        
-        Returns:
-            bool: True if the table is valid, False otherwise
-        """
-        try:
-            # Ensure the invoices table has the required columns
-            if hasattr(self.db_manager, "schema_validator"):
-                # Run validation with diagnostics in case of failure
-                valid = self.db_manager.ensure_valid_schema('invoices')
+        """Validate that the invoices table exists and has the right schema"""
+        with log_context(logger, action="validate_invoices_table"):
+            # Check if the table exists
+            if not hasattr(self.db_manager, 'tables') or 'invoices' not in self.db_manager.tables:
+                logger.warning("Invoices table does not exist")
                 
-                if not valid:
-                    # Get detailed diagnostics
-                    diagnosis = self.db_manager.schema_validator.diagnose_table_schema('invoices')
-                    
-                    # Show a more informative error message
-                    if 'case_mismatches' in diagnosis and diagnosis['case_mismatches']:
-                        mismatch_info = "\n".join([
-                            f"- Expected '{m['expected']}', found '{m['actual']}'" 
-                            for m in diagnosis['case_mismatches']
-                        ])
-                        
-                        messagebox.showerror(
-                            "Schema Error - Column Case Mismatches",
-                            f"The invoices table has column case mismatches:\n\n{mismatch_info}\n\n"
-                            "This can cause errors when querying the database. "
-                            "Would you like the application to attempt to fix these issues?"
-                        )
+                # Ask if we should create it
+                create = messagebox.askyesno(
+                    "Table Missing", 
+                    "The invoices table doesn't exist. Would you like to create it now?"
+                )
+                
+                if create:
+                    logger.info("Creating invoices table")
+                    # Implementation for creating the invoices table
+                    return self.db_manager.ensure_valid_schema('invoices')
                     else:
-                        # Get list of missing columns if available
-                        missing_columns = []
-                        if 'missing_columns' in diagnosis:
-                            missing_columns = [col['name'] for col in diagnosis.get('missing_columns', [])]
-                            
-                        missing_info = ", ".join(missing_columns) if missing_columns else "unknown columns"
-                        
-                        messagebox.showerror(
-                            "Schema Error",
-                            f"The invoices table is missing required columns: {missing_info}\n\n"
-                            "Please fix the schema or import data with the correct format."
-                        )
+                    logger.info("User chose not to create invoices table")
                     return False
             
-            return True
-            
-        except Exception as e:
-            logger.error(f"Failed to validate invoices table: {str(e)}")
-            messagebox.showerror(
-                "Schema Validation Error",
-                f"Failed to validate invoices table: {str(e)}\n\n"
-                "Please ensure your database is properly set up."
-            )
-            return False
+            # Ensure the schema is valid
+            return self.db_manager.ensure_valid_schema('invoices')
     
-    def _create_layout(self):
-        """Create the dashboard layout"""
-        # Create frame for summary cards
-        self.summary_frame = ttk.Frame(self.frame)
-        self.summary_frame.pack(fill=tk.X, padx=5, pady=5)
-        
-        # Create frame for charts
-        self.charts_frame = ttk.Frame(self.frame)
-        self.charts_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
-        
-        # Create frame for invoice table
-        self.table_frame = ttk.Frame(self.frame)
-        self.table_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
-        
-        # Create a frame for filters
-        self.filter_frame = ttk.LabelFrame(self.frame, text="Filters")
-        self.filter_frame.pack(fill=tk.X, padx=5, pady=5)
-        
-        # Date range filter
-        ttk.Label(self.filter_frame, text="Date Range:").grid(row=0, column=0, padx=5, pady=5)
-        self.date_range = ttk.Combobox(self.filter_frame, values=["All", "Last 30 Days", "Last 90 Days", "This Year"])
-        self.date_range.grid(row=0, column=1, padx=5, pady=5)
-        self.date_range.current(0)
-        
-        # Status filter
-        ttk.Label(self.filter_frame, text="Status:").grid(row=0, column=2, padx=5, pady=5)
-        self.status_filter = ttk.Combobox(self.filter_frame, values=["All", "Paid", "Unpaid", "Overdue"])
-        self.status_filter.grid(row=0, column=3, padx=5, pady=5)
-        self.status_filter.current(0)
-        
-        # Fund filter
-        ttk.Label(self.filter_frame, text="Fund:").grid(row=0, column=4, padx=5, pady=5)
-        self.fund_filter = ttk.Combobox(self.filter_frame, values=["All"])
-        self.fund_filter.grid(row=0, column=5, padx=5, pady=5)
-        self.fund_filter.current(0)
-        
-        # Apply filter button
-        self.apply_button = ttk.Button(self.filter_frame, text="Apply Filters", command=self.apply_filters)
-        self.apply_button.grid(row=0, column=6, padx=5, pady=5)
-        
-        # Populate fund filter values
-        self._update_fund_filter()
-    
+    @log_execution_time(logger)
     def _update_fund_filter(self):
-        """Update the fund filter with values from the database"""
-        try:
-            # Get fund values from the database
-            query = "SELECT DISTINCT fund_paid_by FROM invoices WHERE fund_paid_by IS NOT NULL"
-            result = self.db_manager.execute_query(query)
-            
-            if 'error' not in result and result['rows']:
-                # Extract unique fund values
-                funds = ["All"] + [row[0] for row in result['rows'] if row[0]]
-                
-                # Update the combobox values
-                self.fund_filter['values'] = funds
-                
-                logger.info(f"Updated fund filter with {len(funds)-1} values")
-        except Exception as e:
-            logger.error(f"Error updating fund filter: {str(e)}")
-    
-    def _create_summary_cards(self):
-        """Create summary cards for key metrics"""
-        # Create summary card styles
-        style = ttk.Style()
-        style.configure("Card.TFrame", background="#f0f0f0", relief="raised", borderwidth=1)
-        style.configure("CardTitle.TLabel", background="#f0f0f0", font=("Arial", 10, "bold"))
-        style.configure("CardValue.TLabel", background="#f0f0f0", font=("Arial", 16, "bold"))
-        
-        # Create card frames
-        self.paid_card = ttk.Frame(self.summary_frame, style="Card.TFrame", width=200, height=100)
-        self.paid_card.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=5, pady=5)
-        self.paid_card.pack_propagate(False)
-        
-        self.unpaid_card = ttk.Frame(self.summary_frame, style="Card.TFrame", width=200, height=100)
-        self.unpaid_card.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=5, pady=5)
-        self.unpaid_card.pack_propagate(False)
-        
-        self.total_card = ttk.Frame(self.summary_frame, style="Card.TFrame", width=200, height=100)
-        self.total_card.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=5, pady=5)
-        self.total_card.pack_propagate(False)
-        
-        self.overdue_card = ttk.Frame(self.summary_frame, style="Card.TFrame", width=200, height=100)
-        self.overdue_card.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=5, pady=5)
-        self.overdue_card.pack_propagate(False)
-        
-        # Add card content
-        ttk.Label(self.paid_card, text="Paid Invoices", style="CardTitle.TLabel").pack(pady=(10, 0))
-        self.paid_value = ttk.Label(self.paid_card, text="0", style="CardValue.TLabel")
-        self.paid_value.pack(pady=10)
-        
-        ttk.Label(self.unpaid_card, text="Pending Invoices", style="CardTitle.TLabel").pack(pady=(10, 0))
-        self.unpaid_value = ttk.Label(self.unpaid_card, text="0", style="CardValue.TLabel")
-        self.unpaid_value.pack(pady=10)
-        
-        ttk.Label(self.total_card, text="Total Amount", style="CardTitle.TLabel").pack(pady=(10, 0))
-        self.total_value = ttk.Label(self.total_card, text="$0.00", style="CardValue.TLabel")
-        self.total_value.pack(pady=10)
-        
-        ttk.Label(self.overdue_card, text="Overdue Invoices", style="CardTitle.TLabel").pack(pady=(10, 0))
-        self.overdue_value = ttk.Label(self.overdue_card, text="0", style="CardValue.TLabel")
-        self.overdue_value.pack(pady=10)
-        
-        # Update summary cards
-        self._update_summary_cards()
-    
-    def _update_summary_cards(self):
-        """Update the summary cards with data from the database"""
-        try:
-            # Get invoice summary data
-            summary = self.db_manager.get_invoice_summary()
-            
-            # Safely update values with proper type checking
-            try:
-                paid_count = int(summary.get('paid_count', 0))
-                if hasattr(self.paid_value, 'config'):
-                    self.paid_value.config(text=str(paid_count))
-                elif isinstance(self.paid_value, int):
-                    self.paid_value = paid_count
-            except (TypeError, AttributeError) as e:
-                logger.error(f"Error updating paid value: {str(e)}")
-                if hasattr(self.paid_value, 'config'):
-                    self.paid_value.config(text="0")
-            
-            try:
-                unpaid_count = int(summary.get('unpaid_count', 0))
-                if hasattr(self.unpaid_value, 'config'):
-                    self.unpaid_value.config(text=str(unpaid_count))
-                elif isinstance(self.unpaid_value, int):
-                    self.unpaid_value = unpaid_count
-            except (TypeError, AttributeError) as e:
-                logger.error(f"Error updating unpaid value: {str(e)}")
-                if hasattr(self.unpaid_value, 'config'):
-                    self.unpaid_value.config(text="0")
-            
-            try:
-                overdue_count = int(summary.get('overdue_count', 0))
-                if hasattr(self.overdue_value, 'config'):
-                    self.overdue_value.config(text=str(overdue_count))
-                elif isinstance(self.overdue_value, int):
-                    self.overdue_value = overdue_count
-            except (TypeError, AttributeError) as e:
-                logger.error(f"Error updating overdue value: {str(e)}")
-                if hasattr(self.overdue_value, 'config'):
-                    self.overdue_value.config(text="0")
-            
-            # Format total amount as currency
-            try:
-                total = float(summary.get('total_amount', 0))
-                total_str = f"${total:,.2f}"
-                if hasattr(self.total_value, 'config'):
-                    self.total_value.config(text=total_str)
-                elif isinstance(self.total_value, (int, float)):
-                    self.total_value = total
-            except (TypeError, AttributeError) as e:
-                logger.error(f"Error updating total value: {str(e)}")
-                if hasattr(self.total_value, 'config'):
-                    self.total_value.config(text="$0.00")
-            
-            logger.info("Updated summary cards")
-        except Exception as e:
-            logger.error(f"Error updating summary cards: {str(e)}")
-            # Set default values in case of error, with safety checks
-            if hasattr(self.paid_value, 'config'):
-                self.paid_value.config(text="0")
-            if hasattr(self.unpaid_value, 'config'):
-                self.unpaid_value.config(text="0")
-            if hasattr(self.overdue_value, 'config'):
-                self.overdue_value.config(text="0")
-            if hasattr(self.total_value, 'config'):
-                self.total_value.config(text="$0.00")
-    
-    def _create_charts(self):
-        """Create charts for invoice visualization"""
-        # Create a figure for the charts
-        self.figure = plt.Figure(figsize=(10, 5), dpi=100)
-        
-        # Create a canvas for the figure
-        self.canvas = FigureCanvasTkAgg(self.figure, self.charts_frame)
-        self.canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
-        
-        # Create subplots
-        self.pie_ax = self.figure.add_subplot(121)
-        self.bar_ax = self.figure.add_subplot(122)
-        
-        # Update charts
-        self._update_charts()
-    
-    def _update_charts(self):
-        """Update the charts with data from the database"""
-        try:
-            # Clear the axes
-            self.pie_ax.clear()
-            self.bar_ax.clear()
-            
-            # Get status distribution for pie chart
-            status_query = """
-            SELECT payment_status, COUNT(*) 
-            FROM invoices 
-            GROUP BY payment_status
-            """
-            status_result = self.db_manager.execute_query(status_query)
-            
-            if 'error' not in status_result and status_result['rows']:
-                # Create a dataframe for the status data
-                status_df = pd.DataFrame(status_result['rows'], columns=['Status', 'Count'])
-                
-                # Create pie chart
-                self.pie_ax.pie(
-                    status_df['Count'], 
-                    labels=status_df['Status'], 
-                    autopct='%1.1f%%',
-                    startangle=90
-                )
-                self.pie_ax.set_title('Invoice Status Distribution')
-                
-            # Get fund distribution for bar chart
-            fund_query = """
-            SELECT fund_paid_by, SUM(amount) 
-            FROM invoices 
-            WHERE fund_paid_by IS NOT NULL 
-            GROUP BY fund_paid_by
-            """
-            fund_result = self.db_manager.execute_query(fund_query)
-            
-            if 'error' not in fund_result and fund_result['rows']:
-                # Create a dataframe for the fund data
-                fund_df = pd.DataFrame(fund_result['rows'], columns=['Fund', 'Amount'])
-                
-                # Sort by amount descending
-                fund_df = fund_df.sort_values('Amount', ascending=False)
-                
-                # Create bar chart
-                self.bar_ax.barh(fund_df['Fund'], fund_df['Amount'])
-                self.bar_ax.set_title('Amount by Fund')
-                self.bar_ax.set_xlabel('Amount ($)')
-                
-                # Format y-axis tick labels
-                self.bar_ax.tick_params(axis='y', labelsize=8)
-                
-                # Add amount labels to bars
-                for i, amount in enumerate(fund_df['Amount']):
-                    self.bar_ax.text(amount + 100, i, f"${amount:,.2f}", va='center', fontsize=8)
-            
-            # Adjust layout
-            self.figure.tight_layout()
-            
-            # Draw the canvas
-            self.canvas.draw()
-            
-            logger.info("Updated charts")
-        except Exception as e:
-            logger.error(f"Error updating charts: {str(e)}")
-    
-    def _create_invoice_table(self):
-        """Create the invoice table"""
-        # Create a frame for the table
-        table_frame = ttk.LabelFrame(self.table_frame, text="Recent Invoices")
-        table_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
-        
-        # Create a frame for the treeview and scrollbars
-        tree_frame = ttk.Frame(table_frame)
-        tree_frame.pack(fill=tk.BOTH, expand=True)
-        
-        # Create scrollbars
-        vsb = ttk.Scrollbar(tree_frame, orient=tk.VERTICAL)
-        hsb = ttk.Scrollbar(tree_frame, orient=tk.HORIZONTAL)
-        vsb.pack(side=tk.RIGHT, fill=tk.Y)
-        hsb.pack(side=tk.BOTTOM, fill=tk.X)
-        
-        # Define columns
-        columns = (
-            "invoice_number", "vendor", "amount", "invoice_date", 
-            "due_date", "payment_status", "fund_paid_by"
-        )
-        
-        # Create treeview
-        self.invoice_tree = ttk.Treeview(
-            tree_frame, 
-            columns=columns,
-            show="headings",
-            yscrollcommand=vsb.set,
-            xscrollcommand=hsb.set
-        )
-        
-        # Configure scrollbars
-        vsb.config(command=self.invoice_tree.yview)
-        hsb.config(command=self.invoice_tree.xview)
-        
-        # Configure column headings
-        column_names = {
-            "invoice_number": "Invoice #",
-            "vendor": "Vendor",
-            "amount": "Amount",
-            "invoice_date": "Invoice Date",
-            "due_date": "Due Date",
-            "payment_status": "Status",
-            "fund_paid_by": "Fund"
-        }
-        
-        # Set column headings and widths
-        for col in columns:
-            self.invoice_tree.heading(col, text=column_names.get(col, col.replace("_", " ").title()))
-            
-            # Set column width based on content type
-            if col in ["invoice_date", "due_date"]:
-                width = 100
-            elif col in ["amount"]:
-                width = 80
-            elif col in ["invoice_number", "payment_status"]:
-                width = 120
-            elif col in ["vendor", "fund_paid_by"]:
-                width = 150
-            else:
-                width = 100
-                
-            self.invoice_tree.column(col, width=width, minwidth=50)
-        
-        # Pack the treeview
-        self.invoice_tree.pack(fill=tk.BOTH, expand=True)
-        
-        # Update with initial data
-        self._update_invoice_table()
-    
-    def _update_invoice_table(self):
-        """Update the invoice table with current data"""
-        try:
-            # Clear the table
-            for item in self.invoice_tree.get_children():
-                self.invoice_tree.delete(item)
-            
-            # Add data from current_invoices to the table
-            for invoice in self.current_invoices:
-                row_values = []
-                
-                # Extract values for each column in the treeview
-                for col in self.invoice_tree['columns']:
-                    # The invoice data could be a dict or a list
-                    if isinstance(invoice, dict):
-                        # For dictionaries, use column name as key 
-                        value = invoice.get(col, "")
-                    else:
-                        # For lists, try to find the column by column index in the result
-                        col_idx = self.invoice_tree['columns'].index(col)
-                        value = invoice[col_idx] if col_idx < len(invoice) else ""
-                    
-                    # Format date values
-                    if isinstance(value, datetime):
-                        value = value.strftime('%Y-%m-%d')
-                    
-                    # Format amount values
-                    if col == 'amount' and isinstance(value, (int, float)):
-                        value = f"${value:,.2f}"
-                    
-                    row_values.append(value)
-                
-                # Add the row to the treeview
-                self.invoice_tree.insert("", tk.END, values=row_values)
-            
-            logger.info(f"Updated invoice table with {len(self.current_invoices)} rows")
-        except Exception as e:
-            logger.error(f"Error updating invoice table: {str(e)}")
-    
-    def _schedule_updates(self):
-        """Schedule regular updates for the dashboard"""
-        def update_loop():
-            while True:
-                try:
-                    # Update all dashboard elements
-                    self._update_summary_cards()
-                    self._update_charts()
-                    self._update_invoice_table()
-                    
-                    # Wait for 5 seconds
-                    time.sleep(5)
-                except Exception as e:
-                    logger.error(f"Error in update loop: {str(e)}")
-                    time.sleep(5)
-        
-        # Start update thread
-        update_thread = threading.Thread(target=update_loop, daemon=True)
-        update_thread.start()
-        
-        logger.info("Dashboard updates scheduled")
-    
-    def apply_filters(self):
-        """Apply the selected filters to the dashboard"""
-        try:
-            # Get filter values
-            date_range = self.date_range.get()
-            status = self.status_filter.get()
-            fund = self.fund_filter.get()
-            
-            # Build filters dictionary
-            filters = {}
-            
-            # Add date range filter
-            if date_range != "All":
-                end_date = datetime.now()
-                if date_range == "Last 30 Days":
-                    start_date = end_date - timedelta(days=30)
-                elif date_range == "Last 90 Days":
-                    start_date = end_date - timedelta(days=90)
-                elif date_range == "This Year":
-                    start_date = datetime(end_date.year, 1, 1)
-                
-                filters['start_date'] = start_date.strftime('%Y-%m-%d')
-                filters['end_date'] = end_date.strftime('%Y-%m-%d')
-            
-            # Add status filter
-            if status != "All":
-                if status == "Overdue":
-                    # Overdue is a special case - it's unpaid invoices past their due date
-                    filters['status'] = "Unpaid"
-                    filters['overdue'] = True
-                else:
-                    filters['status'] = status
-            
-            # Add fund filter
-            if fund != "All":
-                filters['fund'] = fund
-            
-            # Update the dashboard with the new filters
-            self._update_data(filters)
-            
-            logger.info(f"Applied filters: {filters}")
-        except Exception as e:
-            logger.error(f"Error applying filters: {str(e)}")
-            messagebox.showerror("Filter Error", f"Failed to apply filters: {str(e)}")
-    
-    def _update_data(self, filters=None):
-        """Update all dashboard components with fresh data
-        
-        Args:
-            filters: Optional filters to apply to the data
-        """
-        try:
-            # Get invoice data with filters
-            result = self.db_manager.get_invoice_data(filters)
-            
-            if 'error' in result and result['error']:
-                messagebox.showerror("Data Error", f"Failed to get invoice data: {result['error']}")
+        """Update the fund filter dropdown with available funds"""
+        with log_context(logger, action="update_fund_filter"):
+            # Check if fund_combo is initialized
+            if not hasattr(self, 'fund_combo'):
+                logger.warning("Fund combo box not initialized")
                 return
                 
-            # Store the current invoices
-            if 'rows' in result:
-                self.current_invoices = result['rows']
-            
-            # Update dashboard components
-            self._update_summary_cards()
-            self._update_charts()
-            self._update_invoice_table()
-            
-            logger.info(f"Dashboard updated with {len(self.current_invoices)} invoices")
+            try:
+                # Query the database for unique fund names
+                query = "SELECT DISTINCT fund_paid_by FROM invoices WHERE fund_paid_by IS NOT NULL ORDER BY fund_paid_by"
+                result = self.db_manager.execute_query(query)
+                
+                if result and 'rows' in result and result['rows']:
+                    # Extract fund names
+                    funds = ["All"]  # Add "All" as the first option
+                    for row in result['rows']:
+                        funds.append(row[0])
+                    
+                    # Update the combobox values
+                    self.fund_combo['values'] = funds
+                    self.fund_combo.current(0)  # Set to "All"
+                    
+                    logger.info(f"Updated fund filter with {len(funds) - 1} funds", 
+                               extra={"funds": funds[1:]})
+                else:
+                    # No funds found
+                    self.fund_combo['values'] = ["All"]
+                    self.fund_combo.current(0)
+                    logger.info("No funds found for filter")
+                    
         except Exception as e:
-            logger.error(f"Error updating dashboard data: {str(e)}")
-            messagebox.showerror("Update Error", f"Failed to update dashboard: {str(e)}")
+                logger.exception_with_context(f"Error updating fund filter: {str(e)}")
+                self.fund_combo['values'] = ["All"]
+                self.fund_combo.current(0)
     
+    @log_execution_time(logger)
+    def apply_filters(self):
+        """Apply the selected filters to the data"""
+        with log_context(logger, action="apply_filters"):
+            # Get filter values
+            status = self.status_var.get()
+            fund = self.fund_var.get()
+            start_date = self.start_date_var.get()
+            end_date = self.end_date_var.get()
+            
+            # Create filters dictionary
+            filters = {}
+            
+            # Only add non-empty, non-"All" values
+            if status and status != "All":
+                filters["status"] = status
+                logger.debug(f"Applying status filter: {status}")
+            
+            if fund and fund != "All":
+                filters["fund"] = fund
+                logger.debug(f"Applying fund filter: {fund}")
+            
+            if start_date:
+                # Validate date format (YYYY-MM-DD)
+                if self._validate_date(start_date):
+                    filters["start_date"] = start_date
+                    logger.debug(f"Applying start date filter: {start_date}")
+                else:
+                    logger.warning(f"Invalid start date format: {start_date}")
+                    messagebox.showerror("Error", "Start date must be in YYYY-MM-DD format")
+                    return
+            
+            if end_date:
+                # Validate date format (YYYY-MM-DD)
+                if self._validate_date(end_date):
+                    filters["end_date"] = end_date
+                    logger.debug(f"Applying end date filter: {end_date}")
+                else:
+                    logger.warning(f"Invalid end date format: {end_date}")
+                    messagebox.showerror("Error", "End date must be in YYYY-MM-DD format")
+                    return
+            
+            # Log the filter application
+            logger.info(f"Applying filters to dashboard", extra={"filters": filters})
+            
+            # Update the dashboard with the filters
+            self._update_data(filters)
+            
+    def _validate_date(self, date_str):
+        """Validate that a string is in YYYY-MM-DD format"""
+        try:
+            datetime.strptime(date_str, '%Y-%m-%d')
+            return True
+        except ValueError:
+            return False
+    
+    def _update_data(self, filters=None):
+        """Update the data based on filters"""
+        with log_context(logger, action="update_filtered_data"):
+            try:
+                # Update the UI with filtered data
+                # This is a placeholder for the actual implementation
+                
+                # Example of how this might be implemented:
+                if hasattr(self, 'invoice_tree') and self.invoice_tree:
+                    # Clear existing items
+                    for item in self.invoice_tree.get_children():
+                        self.invoice_tree.delete(item)
+                    
+                    # Get filtered invoice data
+            result = self.db_manager.get_invoice_data(filters)
+            
+                    if result and 'rows' in result and result['rows']:
+                        # Format and insert rows
+                        for row in result['rows']:
+                            # Format and insert as before
+                            formatted_row = self._format_invoice_row(row)
+                            self.invoice_tree.insert('', 'end', values=formatted_row)
+                            
+                        logger.info(f"Updated table with {len(result['rows'])} filtered invoices")
+                    else:
+                        logger.info("No invoices match the selected filters")
+                
+                # Update summary cards and charts with filtered data
+                # ...
+                
+        except Exception as e:
+                logger.exception_with_context(f"Error updating filtered data: {str(e)}")
+                messagebox.showerror("Error", f"Failed to apply filters: {str(e)}")
+    
+    @log_execution_time(logger)
     def show(self):
         """Show the dashboard"""
+        with log_context(logger, action="show_dashboard"):
+            logger.info("Showing dashboard")
         self.frame.pack(fill=tk.BOTH, expand=True)
 
     def execute_deal_allocations_query(self):

@@ -26,16 +26,23 @@ from finance_assistant.database.manager import DatabaseManager
 load_dotenv()
 
 # Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler("finance_app.log"),
-        logging.StreamHandler()
-    ]
-)
-
-logger = logging.getLogger(__name__)
+try:
+    # Try to use enhanced logging with ELK Stack support
+    from finance_assistant.logging_config import configure_logging
+    logger = configure_logging('finance_assistant')
+except ImportError as e:
+    # Fall back to basic logging if there's an issue with the logging module
+    import logging
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        handlers=[
+            logging.FileHandler("finance_app.log"),
+            logging.StreamHandler()
+        ]
+    )
+    logger = logging.getLogger(__name__)
+    logger.warning(f"Enhanced logging not available, using basic logging: {str(e)}")
 
 class FinancialAssistant:
     """Main application class - simplified version"""
@@ -166,10 +173,8 @@ class FinancialAssistant:
         # Add toolbar buttons with icons using the accent style
         ttk.Button(button_frame, text="Connect Database", style="Accent.TButton", 
                   command=self._connect_database).pack(side=tk.LEFT, padx=5)
-        ttk.Button(button_frame, text="Invoice Dashboard", 
-                  command=self._show_invoice_dashboard).pack(side=tk.LEFT, padx=5)
-        ttk.Button(button_frame, text="LLM Dashboard", 
-                  command=self._show_llm_dashboard).pack(side=tk.LEFT, padx=5)
+        ttk.Button(button_frame, text="Unified Dashboard", style="Accent.TButton", 
+                  command=self._show_unified_dashboard).pack(side=tk.LEFT, padx=5)
         
         # Create status bar with gradient effect
         status_frame = tk.Frame(main_frame, height=25, bg=self.bg_medium)
@@ -201,10 +206,8 @@ class FinancialAssistant:
         
         ttk.Button(button_frame, text="Connect to Database", style="Accent.TButton",
                  command=self._connect_database, width=25).pack(pady=5)
-        ttk.Button(button_frame, text="Open Invoice Dashboard", 
-                 command=self._show_invoice_dashboard, width=25).pack(pady=5)
-        ttk.Button(button_frame, text="Open LLM-Powered Dashboard", 
-                 command=self._show_llm_dashboard, width=25).pack(pady=5)
+        ttk.Button(button_frame, text="Open Unified Dashboard", style="Accent.TButton",
+                 command=self._show_unified_dashboard, width=25).pack(pady=5)
         
     def _create_menu(self):
         """Create the menu bar"""
@@ -221,8 +224,7 @@ class FinancialAssistant:
         # Database menu
         db_menu = tk.Menu(menubar, tearoff=0)
         menubar.add_cascade(label="Database", menu=db_menu)
-        db_menu.add_command(label="Invoice Dashboard", command=self._show_invoice_dashboard)
-        db_menu.add_command(label="LLM Invoice Dashboard", command=self._show_llm_dashboard)
+        db_menu.add_command(label="Unified Dashboard", command=self._show_unified_dashboard)
         db_menu.add_separator()
         db_menu.add_command(label="Fix Database Schema", command=self._fix_database_schema)
         db_menu.add_command(label="Schema Inspector", command=self._show_schema_inspector)
@@ -247,9 +249,6 @@ class FinancialAssistant:
         dashboard_menu = tk.Menu(menubar, tearoff=0)
         menubar.add_cascade(label="Dashboards", menu=dashboard_menu)
         
-        dashboard_menu.add_command(label="Classic Dashboard", command=self._show_invoice_dashboard)
-        dashboard_menu.add_command(label="LLM Dashboard", command=self._show_llm_dashboard)
-        dashboard_menu.add_separator()
         dashboard_menu.add_command(label="Unified Dashboard", command=self._show_unified_dashboard)
         
     def _try_auto_connect(self):
@@ -287,8 +286,8 @@ class FinancialAssistant:
                     # Automatically validate and fix schema issues
                     self._validate_and_fix_database_schema()
                     
-                    # Show the invoice dashboard
-                    self._show_invoice_dashboard()
+                    # Show the unified dashboard
+                    self._show_unified_dashboard()
                 else:
                     self.status_var.set("Connection failed")
                     logger.warning(f"Auto-connect failed: {message}")
@@ -468,8 +467,8 @@ class FinancialAssistant:
                         dialog.destroy()
                         messagebox.showinfo("Success", message)
                         
-                        # Show the invoice dashboard
-                        self._show_invoice_dashboard()
+                        # Show the unified dashboard
+                        self._show_unified_dashboard()
                     else:
                         messagebox.showerror("Connection Error", message)
                     
@@ -1761,4 +1760,4 @@ class FinancialAssistant:
         
 if __name__ == "__main__":
     app = FinancialAssistant()
-    app.run() 
+    app.run()

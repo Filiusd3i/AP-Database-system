@@ -41,7 +41,7 @@ class SchemaValidator:
         schemas['invoices'] = {
             'required_columns': {
                 'invoice_number': 'VARCHAR(50)',
-                'vendor': 'VARCHAR(100)',
+                'vendor_name': 'VARCHAR(100)',  # Use vendor_name instead of vendor
                 'invoice_date': 'DATE',
                 'due_date': 'DATE', 
                 'amount': 'DECIMAL(10,2)',
@@ -1441,4 +1441,4 @@ class SchemaValidator:
                 self.db_manager.db.rollback_transaction()
             except:
                 pass
-            return False 
+            return False

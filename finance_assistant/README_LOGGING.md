@@ -1,23 +1,41 @@
-# Enhanced Logging System
+# Enhanced Logging System with ELK Stack Integration
 
-This document provides an overview of the enhanced logging system implemented in the Finance Assistant application. 
+This document provides an overview of the enhanced logging system implemented in the Finance Assistant application.
 
 ## Features
 
-- **Structured Logging**: JSON-formatted logs with consistent structure for easier parsing and analysis
-- **ELK Stack Integration**: Direct connection to Logstash for centralized log management
-- **Performance Tracking**: Tools to measure and log execution time of operations
-- **Method Call Tracing**: Decorators to automatically log method entry/exit with parameters
-- **Context-Rich Logs**: Extra metadata fields to provide additional context to log entries
-- **Graceful Fallbacks**: Continues working even if ELK Stack connection fails
-- **Multiple Output Formats**: Console, file, and ELK stack outputs
+- **Robust**: Multiple logging paths, graceful degradation, retry logic
+- **Comprehensive**: Structured logs with rich context and metadata
+- **Performance-oriented**: Asynchronous logging, batching, low overhead
+- **Fully integrated**: Direct integration with ELK Stack for centralized log management
+- **Developer-friendly**: Easy to use API with context managers and decorators
+
+## Key Components
+
+1. **Core Logger Configuration**: `finance_assistant/logging_config.py`
+   - Sets up logging based on environment
+   - Configures multiple handlers for redundancy
+   - Dynamically adapts to available dependencies
+
+2. **Logging Utilities**: `finance_assistant/logging_utils.py`
+   - Enhanced structured logging
+   - Performance tracking tools
+   - Context-aware logging
+   - Colored console output
+
+3. **Elasticsearch Integration**: `finance_assistant/elasticsearch_handler.py`
+   - Direct integration with Elasticsearch
+   - Buffering with disk persistence
+   - Automatic retry logic
+   - Proper index templates for efficient storage
 
 ## Robust Dependency Handling
 
-The logging system is designed to work in two modes:
+The logging system is designed to work in three modes:
 
-1. **Full Mode** - With ELK Stack integration (when `python-logstash-async` is installed)
-2. **Fallback Mode** - Basic structured logging without ELK Stack (when dependencies are missing)
+1. **Full ELK Stack Mode** - With both Logstash and direct Elasticsearch integration
+2. **Logstash-only Mode** - With Logstash integration but without direct Elasticsearch
+3. **Fallback Mode** - Basic structured logging without ELK Stack (when dependencies are missing)
 
 This ensures the application will always start and function correctly, even if the ELK Stack components are unavailable.
 
@@ -25,84 +43,89 @@ This ensures the application will always start and function correctly, even if t
 
 To enable full ELK Stack integration:
 
-1. Run the `install_logging_deps.bat` script which will install all required packages into your virtual environment
-2. Verify the installation using the `test_logging.py` script
-
-```batch
-# Install dependencies
-.\install_logging_deps.bat
-
-# Test that everything is working
-python test_logging.py
+```bash
+pip install python-logstash-async elasticsearch elasticsearch-dsl
 ```
 
-## Components
+## Using the Logging System
 
-### 1. `logging_config.py`
-
-The main configuration module that sets up the logging system:
-
-- Configures loggers with appropriate handlers based on environment
-- Connects to Logstash (ELK Stack) in production/staging environments
-- Falls back to file-based logging in development environments
-- Registers custom logger class with enhanced functionality
-- Gracefully handles missing dependencies
+### Basic Logging
 
 ```python
-from finance_assistant.logging_config import configure_logging
+# Get a logger for your module
+from finance_assistant.logging_config import get_logger
+logger = get_logger(__name__)
 
-# Get a configured logger
-logger = configure_logging('my_component')
+# Use standard logging methods
+logger.debug("Debug message")
+logger.info("Information message")
+logger.warning("Warning message")
+logger.error("Error message", exc_info=True)  # Include exception info
+logger.critical("Critical error")
 
-# Use the logger
-logger.info("Operation completed successfully", extra={
-    'operation_id': '12345',
-    'items_processed': 42
+# Add structured context
+logger.info("User logged in", extra={
+    'user_id': user.id,
+    'username': user.username,
+    'ip_address': request.remote_addr
 })
 ```
 
-### 2. `logging_utils.py`
+### Advanced Features
 
-Provides utility classes and functions for enhanced logging:
-
-- **StructuredLogger**: Custom logger class that creates enhanced log records
-- **JSONFormatter**: Formats logs as JSON for better parsability
-- **log_execution_time**: Context manager to track and log execution time
-- **log_method_calls**: Decorator to automatically log method entry/exit with parameters
-- **configure_enhanced_logging**: Set up a logger with structured logging capabilities
+#### Performance Tracking
 
 ```python
 from finance_assistant.logging_utils import log_execution_time
 
-# Log execution time of a block of code
-with log_execution_time(logger, "Database query", extra={'query_id': '12345'}):
+# Track execution time of a code block
+with log_execution_time(logger, "Database query"):
     results = db.execute_query("SELECT * FROM users")
-
-# The execution time will be automatically logged when the block exits
 ```
+
+#### Method Call Tracking
 
 ```python
 from finance_assistant.logging_utils import log_method_calls
 
 class UserService:
-    @log_method_calls(logger)
+    @log_method_calls(logger, log_args=True, performance_threshold_ms=100)
     def get_user(self, user_id):
         # Method implementation
         return user
-        
-# When get_user is called, the method entry and exit will be automatically logged
-# with parameter values and execution time
 ```
 
-### 3. `logging_example.py`
+#### Request Context
 
-A demonstration module showing how to use the logging system effectively:
+```python
+from finance_assistant.logging_utils import request_context
 
-- Examples of structured logging
-- Performance tracking
-- Method call tracing
-- Error handling
-- Run this file to see the logging in action: `python -m finance_assistant.logging_example`
+# In a web request handler
+with request_context(request_id=request.id, user_id=user.id, endpoint=request.path):
+    # All logs within this block will include this context
+    logger.info("Processing request")
+    process_request()
+```
+
+#### Audit Logging
+
+```python
+# Log security and compliance events
+logger.audit("User changed permissions", extra={
+    'user_id': admin.id,
+    'target_user': user.id,
+    'permission': 'admin',
+    'action': 'grant'
+})
+```
+
+#### Metrics
+
+```python
+# Log metrics for monitoring dashboards
+logger.metric("query_time", 35.2, unit="ms")
+logger.metric("active_users", 1250)
+```
 
 ## Best Practices
 
@@ -135,67 +158,112 @@ logger.info("Database migration complete", extra={
 })
 ```
 
-4. **Log Start and End of Operations**: Especially for long-running operations:
+4. **Use Correlation IDs**: For tracking related events:
 
 ```python
-logger.info("Starting data import", extra={'event_type': 'import_start'})
-# ... import process ...
-logger.info("Data import complete", extra={'event_type': 'import_end'})
+with request_context(request_id="12345"):
+    # All logs within this block will have the same correlation ID
+    logger.info("Processing payment")
 ```
 
-5. **Track Performance**: Use the `log_execution_time` context manager for critical operations:
+## Configuration
 
-```python
-with log_execution_time(logger, "Invoice generation"):
-    # Generate invoice
+The logging system is configured through environment variables:
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| ENVIRONMENT | Environment name (development, staging, production) | development |
+| LOG_LEVEL | Minimum log level to record | INFO |
+| LOG_DIR | Directory for log files | logs |
+| LOGSTASH_HOST | Hostname of Logstash server | localhost |
+| LOGSTASH_PORT | Port for Logstash server | 5959 |
+| ELASTICSEARCH_HOST | URL for Elasticsearch | http://localhost:9200 |
+| ELASTICSEARCH_API_KEY | API key for Elasticsearch (if required) | |
+| APP_NAME | Application name for namespacing | finance_assistant |
+| APP_VERSION | Application version | |
+| LOG_RETENTION_DAYS | Days to retain log files | 90 |
+| MAX_LOG_SIZE_MB | Maximum size of log files before rotation | 10 |
+
+## ELK Stack Integration Details
+
+### Logstash Configuration
+
+Sample Logstash configuration for receiving logs:
+
 ```
+input {
+  tcp {
+    port => 5959
+    codec => json
+  }
+}
+
+filter {
+  date {
+    match => [ "@timestamp", "ISO8601" ]
+  }
+}
+
+output {
+  elasticsearch {
+    hosts => ["http://elasticsearch:9200"]
+    index => "logs-%{[app_name]}-%{+YYYY.MM.dd}"
+  }
+}
+```
+
+### Kibana Dashboard
+
+Sample queries for Kibana:
+
+- Error tracking: `level:ERROR OR level:CRITICAL`
+- Performance issues: `duration_ms:>100 AND status:success`
+- Security events: `log_type:audit`
+- User activity: `context.user_id:* AND NOT level:DEBUG`
 
 ## Monitoring and Analysis
 
 The structured logs produced by this system can be analyzed using:
 
-1. **Kibana Dashboard**: If connected to ELK Stack
-2. **Log Analysis Tools**: The JSON format makes parsing and analysis easier
-3. **Local Log Files**: Check `logs/application.log` and `logs/app_structured.jsonl`
-
-## Configuration
-
-The logging system can be configured using environment variables:
-
-- `ENVIRONMENT`: Set to 'development', 'staging', or 'production'
-- `LOGSTASH_HOST`: Hostname or IP of the Logstash server
-- `LOGSTASH_PORT`: Port number for Logstash connection
-
-For local development, the system will fall back to file-based logging if Logstash connection fails.
+1. **Kibana Dashboard**: For visualization and analysis of logs in ELK Stack
+2. **Elasticsearch Query Language**: For advanced querying and filtering
+3. **Log Analysis Tools**: The JSON format makes parsing and analysis easier
+4. **Local Log Files**: Check the log files in the configured log directory
 
 ## Troubleshooting
 
+### Log Locations
+
+- Console output
+- Standard logs: `logs/{app_name}.log`
+- Rotating logs: `logs/{app_name}_rotating.log`
+- JSON structured logs: `logs/app_structured.jsonl`
+- Buffer files:
+  - Logstash buffer: `logs/logstash_buffer.db`
+  - Elasticsearch buffer: `logs/elasticsearch_buffer.json`
+
+### Common Issues
+
+- **Missing logs in ELK**: Check connectivity to Logstash and Elasticsearch
+- **Log formatting issues**: Ensure serializable data in log records
+- **Performance concerns**: Adjust buffer sizes and flush intervals
+
 ### Missing Dependencies
 
-If you see a warning about missing `logstash_async` package:
+If you see a warning about missing ELK Stack packages:
 
 ```
-ELK Stack integration disabled - logstash_async package not installed. Install with: pip install python-logstash-async
+ELK Stack integration disabled - required packages not installed. Install with: pip install python-logstash-async elasticsearch elasticsearch-handler
 ```
 
-Run the `install_logging_deps.bat` script to install the missing package.
+Install the required packages as instructed.
 
 ### Connection Issues
 
-If you see logs about failing to connect to Logstash:
+If you see logs about failing to connect to Logstash or Elasticsearch:
 
 ```
-Failed to connect to Logstash: Connection refused
+Failed to connect to Logstash at localhost:5959: Connection refused
 ```
 
 This is normal in development environments without an ELK Stack. The system will automatically fall back to file-based logging.
-
-### Testing the Logging System
-
-Run the included test script to verify that logging is working correctly:
-
-```bash
-python test_logging.py
-```
-
-This will test both the basic logging functionality and, if installed, the ELK Stack integration.

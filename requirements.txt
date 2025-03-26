@@ -12,5 +12,7 @@ requests>=2.26.0
 ttkthemes>=3.2.0
 pillow>=8.3.0
 
-# Logging
-python-logstash-async>=2.5.0
+# Enhanced Logging System with ELK Stack Integration
+python-logstash-async>=2.5.0  # Logstash integration
+elasticsearch>=8.6.0           # Elasticsearch client
+elasticsearch-dsl>=8.6.0       # Higher-level Elasticsearch interface

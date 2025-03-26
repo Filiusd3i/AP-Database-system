@@ -725,4 +725,57 @@ class PostgresDatabase:
             return True
         except Exception as e:
             logger.error(f"Error rolling back transaction: {str(e)}")
+            return False
+
+    def create_invoice_relationship_view(self) -> bool:
+        """Create a view that joins invoices with related entities
+        
+        This creates a view that links invoices with vendors, deals, funds and allocations
+        to support visualization of entity relationships in the dashboard.
+        
+        Returns:
+            bool: True if successful, False otherwise
+        """
+        try:
+            # Create the view
+            relationship_view = """
+            CREATE OR REPLACE VIEW invoices_with_relationships AS
+            SELECT 
+                i.id as invoice_id, 
+                i.invoice_number, 
+                i.vendor as vendor_name,
+                v.id as vendor_id, 
+                v.contact_name as vendor_contact,
+                v.email as vendor_email,
+                i.invoice_date, 
+                i.due_date, 
+                i.amount, 
+                i.payment_status,
+                i.payment_date,
+                i.payment_reference,
+                i.fund_paid_by as fund_name,
+                f.id as fund_id,
+                i.impact as deal_name,
+                i.description,
+                i.created_at
+            FROM 
+                invoices i
+            LEFT JOIN 
+                vendors v ON i.vendor = v.name
+            LEFT JOIN 
+                funds f ON i.fund_paid_by = f.name
+            """
+            
+            # Execute the create view query
+            result = self.execute_update(relationship_view)
+            
+            if 'error' in result:
+                logger.error(f"Error creating relationship view: {result['error']}")
+                return False
+                
+            logger.info("Invoice relationship view created successfully")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error creating invoice relationship view: {str(e)}")
             return False 

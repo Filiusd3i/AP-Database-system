@@ -1450,3 +1450,171 @@ class DatabaseManager:
             logger.error(f"Error processing import batch: {str(e)}")
             # Try individual rows as fallback
             return self._insert_rows_individually(table_name, rows, target_columns, column_mapping, column_types) 
+
+    def ensure_private_equity_schema(self):
+        """Ensure the database has the necessary tables and views for private equity fund management.
+        
+        This adds any necessary tables and views specifically needed for the private equity dashboard.
+        
+        Returns:
+            bool: True if successful, False otherwise
+        """
+        try:
+            # Check if required tables exist
+            required_tables = ['invoices', 'vendors', 'funds']
+            missing_tables = [table for table in required_tables if table not in self.tables]
+            
+            if missing_tables:
+                logger.info(f"Creating missing tables for private equity: {missing_tables}")
+                
+                # Create tables using PostgresDatabase methods
+                self.db.create_invoice_tables()
+                
+                # Refresh table list
+                self._fetch_tables()
+            
+            # Create or update the deal_allocations table if it doesn't exist
+            if 'deal_allocations' not in self.tables:
+                logger.info("Creating deal_allocations table for private equity fund management")
+                
+                # SQL to create the deal_allocations table
+                deal_allocations_sql = """
+                CREATE TABLE IF NOT EXISTS deal_allocations (
+                    id SERIAL PRIMARY KEY,
+                    deal_name VARCHAR(100) NOT NULL,
+                    fund_id INTEGER REFERENCES funds(id),
+                    allocation_percentage DECIMAL(5, 2) NOT NULL DEFAULT 100.0,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    CONSTRAINT unique_deal_fund UNIQUE (deal_name, fund_id)
+                );
+                """
+                
+                self.db.execute_update(deal_allocations_sql)
+                
+                # Refresh table list
+                self._fetch_tables()
+            
+            # Create or update the expense_allocation table if it doesn't exist
+            if 'expense_allocation' not in self.tables:
+                logger.info("Creating expense_allocation table for private equity fund management")
+                
+                # SQL to create the expense_allocation table
+                expense_allocation_sql = """
+                CREATE TABLE IF NOT EXISTS expense_allocation (
+                    id SERIAL PRIMARY KEY,
+                    invoice_id INTEGER REFERENCES invoices(id) ON DELETE CASCADE,
+                    deal_allocation_id INTEGER REFERENCES deal_allocations(id),
+                    allocation_percentage DECIMAL(5, 2) NOT NULL DEFAULT 100.0,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    CONSTRAINT unique_invoice_deal UNIQUE (invoice_id, deal_allocation_id)
+                );
+                """
+                
+                self.db.execute_update(expense_allocation_sql)
+                
+                # Refresh table list
+                self._fetch_tables()
+            
+            # Create relationship view
+            logger.info("Creating or updating invoice relationship view")
+            self.db.create_invoice_relationship_view()
+            
+            # Insert sample deal data if needed
+            self._ensure_sample_deal_data()
+            
+            logger.info("Private equity schema setup complete")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error setting up private equity schema: {str(e)}")
+            return False
+    
+    def _ensure_sample_deal_data(self):
+        """Ensure sample deal data exists for demonstration purposes."""
+        try:
+            # Check if there are any deals in the deal_allocations table
+            result = self.db.execute_query("SELECT COUNT(*) FROM deal_allocations")
+            
+            if result.get('rows', [[0]])[0][0] == 0:
+                logger.info("Inserting sample deal allocation data")
+                
+                # Get fund IDs
+                funds_result = self.db.execute_query("SELECT id, name FROM funds")
+                
+                if 'rows' in funds_result and funds_result['rows']:
+                    for fund in funds_result['rows']:
+                        fund_id = fund[0]
+                        
+                        # Sample deals for each fund
+                        deals = [
+                            (f"Deal A - Fund {fund_id}", fund_id, 40.0),
+                            (f"Deal B - Fund {fund_id}", fund_id, 30.0),
+                            (f"Deal C - Fund {fund_id}", fund_id, 20.0),
+                            (f"Operations - Fund {fund_id}", fund_id, 10.0)
+                        ]
+                        
+                        for deal in deals:
+                            self.db.execute_update(
+                                """
+                                INSERT INTO deal_allocations 
+                                (deal_name, fund_id, allocation_percentage) 
+                                VALUES (%s, %s, %s)
+                                ON CONFLICT (deal_name, fund_id) DO NOTHING
+                                """,
+                                deal
+                            )
+                
+                logger.info("Sample deal allocation data inserted")
+                
+                # Link existing invoices to deals
+                self._link_invoices_to_deals()
+        
+        except Exception as e:
+            logger.error(f"Error ensuring sample deal data: {str(e)}")
+    
+    def _link_invoices_to_deals(self):
+        """Link existing invoices to deals for demonstration purposes."""
+        try:
+            # Get all invoices
+            invoices_result = self.db.execute_query(
+                """
+                SELECT i.id, i.fund_paid_by, f.id as fund_id 
+                FROM invoices i
+                LEFT JOIN funds f ON i.fund_paid_by = f.name
+                """
+            )
+            
+            if 'rows' in invoices_result and invoices_result['rows']:
+                logger.info(f"Linking {len(invoices_result['rows'])} invoices to deals")
+                
+                for invoice in invoices_result['rows']:
+                    invoice_id = invoice[0]
+                    fund_id = invoice[2]
+                    
+                    if fund_id:
+                        # Get deals for this fund
+                        deals_result = self.db.execute_query(
+                            "SELECT id FROM deal_allocations WHERE fund_id = %s",
+                            [fund_id]
+                        )
+                        
+                        if 'rows' in deals_result and deals_result['rows']:
+                            # Randomly assign to a deal
+                            import random
+                            deal_id = random.choice(deals_result['rows'])[0]
+                            
+                            # Create expense allocation
+                            self.db.execute_update(
+                                """
+                                INSERT INTO expense_allocation
+                                (invoice_id, deal_allocation_id, allocation_percentage)
+                                VALUES (%s, %s, 100.0)
+                                ON CONFLICT (invoice_id, deal_allocation_id) DO NOTHING
+                                """,
+                                [invoice_id, deal_id]
+                            )
+                
+                logger.info("Invoices linked to deals")
+        
+        except Exception as e:
+            logger.error(f"Error linking invoices to deals: {str(e)}") 

@@ -140,6 +140,16 @@ class InvoiceAppMainWindow(QMainWindow):
                 logger.info("Database initialized successfully")
             else:
                 logger.info("Using existing database")
+                
+            # Ensure the database has the required structure for private equity fund management
+            from finance_assistant.database.manager import DatabaseManager
+            db_manager = DatabaseManager()
+            if db_manager.is_connected:
+                db_manager.ensure_private_equity_schema()
+                logger.info("Private equity schema ensured")
+            else:
+                logger.warning("Could not ensure private equity schema - database not connected")
+                
         except Exception as e:
             logger.error(f"Database initialization error: {str(e)}", exc_info=True)
             QMessageBox.critical(
@@ -307,20 +317,21 @@ class InvoiceAppMainWindow(QMainWindow):
         )
 
 
-def run_application():
-    """Run the main application."""
-    # Configure logging
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    )
+def main():
+    """Run the invoice system application."""
+    import sys
+    from PySide6.QtWidgets import QApplication
+    from invoice_system.logging_config import configure_logging
     
-    # Create and run the application
+    # Configure logging
+    logger = configure_logging()
+    
+    # Create and run application
     app = QApplication(sys.argv)
-    main_window = InvoiceAppMainWindow()
-    main_window.show()
+    window = InvoiceAppMainWindow()
+    window.show()
     sys.exit(app.exec())
 
 
 if __name__ == "__main__":
-    run_application()
+    main()

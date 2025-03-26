@@ -170,84 +170,88 @@ class JSONFormatter(logging.Formatter):
         self.exclude_fields = exclude_fields or ['args', 'msg', 'levelno']
         
     def format(self, record):
-        """Format the specified record as JSON."""
-        # Start with the message and basic fields
-        log_entry = {
-            '@timestamp': record.iso_timestamp,  # ELK standard field
-            'level': record.levelname,
-            'logger': record.name,
-            'message': record.getMessage(),
-            'log_id': record.log_id,
-            'correlation_id': getattr(record, 'correlation_id', ''),
-            'hostname': record.hostname,
-            'environment': getattr(record, 'environment', 'development'),
-            'file': record.pathname,
-            'line': record.lineno,
-            'function': record.funcName,
-            'process_id': getattr(record, 'process_id', os.getpid()),
-            'thread_id': getattr(record, 'thread_id', threading.get_ident())
-        }
-        
-        # Add log type for different kinds of logs
-        log_entry['log_type'] = getattr(record, 'log_type', 'application')
-        
-        # Add context from thread-local storage if available
-        context = getattr(record, 'context', {})
-        if context:
-            log_entry['context'] = context
-        
-        # Add caller information if available (for stack traces)
-        if hasattr(record, 'caller_file'):
-            log_entry['caller'] = {
-                'file': record.caller_file,
-                'function': record.caller_function,
-                'line': record.caller_line
-            }
-        
-        # Add exception info if present
-        if record.exc_info:
-            exception_type = record.exc_info[0].__name__ if record.exc_info[0] else ''
-            exception_message = str(record.exc_info[1]) if record.exc_info[1] else ''
-            
-            log_entry['exception'] = {
-                'type': exception_type,
-                'message': exception_message
+        """Format the specified record as JSON structured data."""
+        try:
+            # Create a standardized JSON structure
+            log_entry = {
+                '@timestamp': getattr(record, 'iso_timestamp', datetime.utcnow().isoformat() + 'Z'),
+                'level': record.levelname,
+                'logger': record.name,
+                'message': record.getMessage(),
+                'log_id': getattr(record, 'log_id', str(uuid.uuid4())),
+                'correlation_id': getattr(record, 'correlation_id', ''),
+                'hostname': getattr(record, 'hostname', socket.gethostname()),
+                'environment': getattr(record, 'environment', 'development'),
+                'file': record.pathname,
+                'line': record.lineno,
+                'function': record.funcName,
+                'process_id': getattr(record, 'process_id', os.getpid()),
+                'thread_id': getattr(record, 'thread_id', threading.get_ident())
             }
             
-            # Format traceback if stack info included
-            if self.include_stack_info:
-                traceback_lines = traceback.format_exception(*record.exc_info)
-                if self.max_stack_lines and len(traceback_lines) > self.max_stack_lines:
-                    traceback_lines = (
-                        traceback_lines[:self.max_stack_lines-1] + 
-                        [f"... (truncated, {len(traceback_lines) - self.max_stack_lines + 1} more lines)"]
+            # Add log type for different kinds of logs
+            log_entry['log_type'] = getattr(record, 'log_type', 'application')
+            
+            # Add context from thread-local storage if available
+            context = getattr(record, 'context', {})
+            if context:
+                log_entry['context'] = context
+            
+            # Add caller information if available (for stack traces)
+            if hasattr(record, 'caller_file'):
+                log_entry['caller'] = {
+                    'file': record.caller_file,
+                    'function': record.caller_function,
+                    'line': record.caller_line
+                }
+            
+            # Add exception info if present
+            if record.exc_info:
+                exception_type = record.exc_info[0].__name__ if record.exc_info[0] else ''
+                exception_message = str(record.exc_info[1]) if record.exc_info[1] else ''
+                
+                log_entry['exception'] = {
+                    'type': exception_type,
+                    'message': exception_message
+                }
+                
+                # Format traceback if stack info included
+                if self.include_stack_info:
+                    traceback_lines = traceback.format_exception(*record.exc_info)
+                    if self.max_stack_lines and len(traceback_lines) > self.max_stack_lines:
+                        traceback_lines = (
+                            traceback_lines[:self.max_stack_lines-1] + 
+                            [f"... (truncated, {len(traceback_lines) - self.max_stack_lines + 1} more lines)"]
+                        )
+                    log_entry['exception']['traceback'] = traceback_lines
+            
+            # Add stack info if available and enabled
+            if self.include_stack_info and getattr(record, 'stack_info', None):
+                stack_lines = record.stack_info.splitlines()
+                if self.max_stack_lines and len(stack_lines) > self.max_stack_lines:
+                    stack_lines = (
+                        stack_lines[:self.max_stack_lines-1] + 
+                        [f"... (truncated, {len(stack_lines) - self.max_stack_lines + 1} more lines)"]
                     )
-                log_entry['exception']['traceback'] = traceback_lines
-        
-        # Add stack info if available and enabled
-        if self.include_stack_info and getattr(record, 'stack_info', None):
-            stack_lines = record.stack_info.splitlines()
-            if self.max_stack_lines and len(stack_lines) > self.max_stack_lines:
-                stack_lines = (
-                    stack_lines[:self.max_stack_lines-1] + 
-                    [f"... (truncated, {len(stack_lines) - self.max_stack_lines + 1} more lines)"]
-                )
-            log_entry['stack'] = stack_lines
-        
-        # Add extra attributes from record
-        for key, value in record.__dict__.items():
-            # Skip internal attributes, already processed ones, and excluded fields
-            if (key not in log_entry and 
-                not key.startswith('_') and
-                key not in self.exclude_fields and
-                (not self.include_fields or key in self.include_fields)):
-                try:
-                    json.dumps({key: value})  # Check if serializable
-                    log_entry[key] = value
-                except (TypeError, OverflowError):
-                    log_entry[key] = str(value)  # Convert to string if not serializable
-        
-        return json.dumps(log_entry)
+                log_entry['stack'] = stack_lines
+            
+            # Add extra attributes from record
+            for key, value in record.__dict__.items():
+                # Skip internal attributes, already processed ones, and excluded fields
+                if (key not in log_entry and 
+                    not key.startswith('_') and
+                    key not in self.exclude_fields and
+                    (not self.include_fields or key in self.include_fields)):
+                    try:
+                        json.dumps({key: value})  # Check if serializable
+                        log_entry[key] = value
+                    except (TypeError, OverflowError):
+                        log_entry[key] = str(value)  # Convert to string if not serializable
+            
+            return json.dumps(log_entry)
+        except Exception as e:
+            # Fallback to simple string if JSON conversion fails
+            return f"Error formatting log record: {str(e)}"
 
 class ColoredConsoleFormatter(logging.Formatter):
     """Formatter that adds ANSI colors to console output."""

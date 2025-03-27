@@ -16,6 +16,7 @@ import sys
 import threading
 from datetime import datetime
 from pathlib import Path
+from contextlib import contextmanager
 
 # Constants for log levels mapping to integers for easy filtering
 LOG_LEVELS = {
